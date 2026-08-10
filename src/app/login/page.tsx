@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
+import { loginToEmail } from "@/lib/username";
 
 const t = getDictionary("fr");
 
@@ -18,7 +19,8 @@ export default function LoginPage() {
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      // username → email interno; um email completo passa tal e qual
+      email: loginToEmail(email),
       password,
     });
     if (error) {
@@ -51,13 +53,15 @@ export default function LoginPage() {
             </label>
             <input
               id="email"
-              type="email"
+              type="text"
               required
-              autoComplete="email"
-              inputMode="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder={t.login.emailHint}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none placeholder:text-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             />
           </div>
           <div>

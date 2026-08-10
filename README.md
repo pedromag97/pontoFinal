@@ -64,7 +64,9 @@ update public.profiles
 Depois de teres o admin:
 
 1. Entra em **Funcionários** no painel e cria um funcionário de teste
-   (ex.: `funcionario.teste@empresa.com` / password com 8+ caracteres).
+   (ex.: username `joao.silva` / password com 8+ caracteres — não é preciso
+   email: internamente é criado `joao.silva@ponto.lusocabo.com`, que nunca
+   recebe correio; também podes usar um email real).
 2. Abre uma janela anónima (ou o telemóvel), faz login com essa conta —
    aparece o ecrã de consentimento RGPD (FR) e depois o fluxo de pointage.
 
@@ -165,3 +167,9 @@ public/                         # manifest.json, sw.js, ícones, offline.html
   mesmas chaves e registá-lo em `src/lib/i18n/index.ts`.
 - **Password reset:** feito pela gestão no painel (não há fluxo de email de
   recuperação — as contas são geridas centralmente).
+- **Login por username:** o Supabase Auth exige email, por isso um username
+  `joao` é mapeado para o email interno `joao@ponto.lusocabo.com`
+  (domínio em `src/lib/username.ts`). O campo de login aceita ambos —
+  funcionários usam o username, admins podem usar o email real.
+  Se a base de dados foi criada antes desta funcionalidade, corre
+  `supabase/migrations/2026-08-10_username_login.sql`.

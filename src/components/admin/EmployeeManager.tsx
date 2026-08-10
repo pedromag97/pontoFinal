@@ -32,7 +32,7 @@ export default function EmployeeManager({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         full_name: name.trim(),
-        email: email.trim(),
+        login: email.trim(),
         password,
       }),
     });
@@ -117,7 +117,9 @@ export default function EmployeeManager({
           />
           <input
             required
-            type="email"
+            type="text"
+            autoCapitalize="none"
+            spellCheck={false}
             placeholder={t.employees.email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -159,6 +161,7 @@ export default function EmployeeManager({
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-3">{t.employees.name}</th>
+              <th className="px-4 py-3">{t.employees.loginCol}</th>
               <th className="px-4 py-3">{t.employees.consent}</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3 text-right">Ações</th>
@@ -177,6 +180,9 @@ export default function EmployeeManager({
                       ? t.employees.role_admin
                       : t.employees.role_employee}
                   </span>
+                </td>
+                <td className="px-4 py-3 font-mono text-xs text-slate-600">
+                  {profile.username ?? "—"}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">
                   {profile.consent_given_at

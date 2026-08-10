@@ -5,11 +5,12 @@
   "login": {
     "title": "Pointage Chantier",
     "subtitle": "Connectez-vous avec le compte fourni par votre entreprise",
-    "email": "Email",
+    "email": "Identifiant",
+    "emailHint": "Votre identifiant (ex. jean.dupont) ou votre email",
     "password": "Mot de passe",
     "submit": "Se connecter",
     "loading": "Connexion…",
-    "error": "Email ou mot de passe incorrect."
+    "error": "Identifiant ou mot de passe incorrect."
   },
   "home": {
     "hello": "Bonjour",

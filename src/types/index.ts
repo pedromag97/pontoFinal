@@ -3,6 +3,7 @@ export type EntryType = "entrada" | "saida";
 
 export interface Profile {
   id: string;
+  username: string | null;
   full_name: string;
   role: Role;
   active: boolean;
