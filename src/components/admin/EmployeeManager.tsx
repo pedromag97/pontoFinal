@@ -1,0 +1,265 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getDictionary } from "@/lib/i18n";
+import { formatDateShort } from "@/lib/format";
+import type { Profile } from "@/types";
+
+const t = getDictionary("pt");
+
+export default function EmployeeManager({
+  initialProfiles,
+}: {
+  initialProfiles: Profile[];
+}) {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
+    null
+  );
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function createEmployee(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setMessage(null);
+    const res = await fetch("/api/admin/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: name.trim(),
+        email: email.trim(),
+        password,
+      }),
+    });
+    setCreating(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setMessage({ ok: false, text: body.error ?? t.employees.error });
+      return;
+    }
+    setMessage({ ok: true, text: t.employees.created });
+    setName("");
+    setEmail("");
+    setPassword("");
+    router.refresh();
+  }
+
+  async function patchEmployee(id: string, body: Record<string, unknown>) {
+    setBusyId(id);
+    setMessage(null);
+    const res = await fetch(`/api/admin/employees/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    setBusyId(null);
+    if (!res.ok) {
+      setMessage({ ok: false, text: t.employees.error });
+      return false;
+    }
+    router.refresh();
+    return true;
+  }
+
+  async function eraseData(profile: Profile) {
+    if (!confirm(t.employees.eraseConfirm)) return;
+    const deleteAccount = confirm(t.employees.eraseAccountAlso);
+    setBusyId(profile.id);
+    setMessage(null);
+    const res = await fetch(`/api/admin/employees/${profile.id}/erase`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deleteAccount }),
+    });
+    setBusyId(null);
+    if (!res.ok) {
+      setMessage({ ok: false, text: t.employees.error });
+      return;
+    }
+    setMessage({ ok: true, text: t.employees.eraseDone });
+    router.refresh();
+  }
+
+  async function rename(profile: Profile) {
+    const newName = prompt(t.employees.renamePrompt, profile.full_name);
+    if (!newName?.trim()) return;
+    await patchEmployee(profile.id, { full_name: newName.trim() });
+  }
+
+  async function resetPassword(profile: Profile) {
+    const newPassword = prompt(t.employees.resetPrompt);
+    if (!newPassword) return;
+    const ok = await patchEmployee(profile.id, { password: newPassword });
+    if (ok) setMessage({ ok: true, text: t.employees.resetDone });
+  }
+
+  return (
+    <div>
+      <h1 className="mb-4 text-2xl font-bold">{t.employees.title}</h1>
+
+      <form
+        onSubmit={createEmployee}
+        className="mb-6 rounded-2xl bg-white p-5 shadow-sm"
+      >
+        <h2 className="mb-3 font-semibold">➕ {t.employees.newTitle}</h2>
+        <div className="flex flex-wrap gap-3">
+          <input
+            required
+            placeholder={t.employees.name}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="min-w-52 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <input
+            required
+            type="email"
+            placeholder={t.employees.email}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="min-w-52 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <input
+            required
+            type="text"
+            minLength={8}
+            placeholder={t.employees.password}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="min-w-44 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            disabled={creating}
+            className="rounded-lg bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+          >
+            {creating ? t.employees.creating : t.employees.create}
+          </button>
+        </div>
+      </form>
+
+      {message && (
+        <p
+          className={`mb-4 rounded-xl px-4 py-3 text-sm ${
+            message.ok
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-red-50 text-red-700"
+          }`}
+        >
+          {message.text}
+        </p>
+      )}
+
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3">{t.employees.name}</th>
+              <th className="px-4 py-3">{t.employees.consent}</th>
+              <th className="px-4 py-3">Estado</th>
+              <th className="px-4 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {initialProfiles.map((profile) => (
+              <tr
+                key={profile.id}
+                className={`border-b border-slate-100 last:border-0 ${!profile.active ? "opacity-50" : ""}`}
+              >
+                <td className="px-4 py-3">
+                  <span className="font-medium">{profile.full_name || "—"}</span>
+                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                    {profile.role === "admin"
+                      ? t.employees.role_admin
+                      : t.employees.role_employee}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-xs text-slate-500">
+                  {profile.consent_given_at
+                    ? `${t.employees.consentYes} ${formatDateShort(profile.consent_given_at.slice(0, 10))}`
+                    : t.employees.consentNo}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      profile.active
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {profile.active ? t.employees.active : t.employees.inactive}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {profile.role === "employee" && (
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <ActionButton
+                        onClick={() => rename(profile)}
+                        disabled={busyId === profile.id}
+                      >
+                        {t.employees.rename}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => resetPassword(profile)}
+                        disabled={busyId === profile.id}
+                      >
+                        {t.employees.resetPassword}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() =>
+                          patchEmployee(profile.id, { active: !profile.active })
+                        }
+                        disabled={busyId === profile.id}
+                      >
+                        {profile.active
+                          ? t.employees.deactivate
+                          : t.employees.activate}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => eraseData(profile)}
+                        disabled={busyId === profile.id}
+                        danger
+                      >
+                        {t.employees.eraseData}
+                      </ActionButton>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  disabled,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-lg border px-2.5 py-1 text-xs font-medium disabled:opacity-50 ${
+        danger
+          ? "border-red-200 text-red-600 hover:bg-red-50"
+          : "border-slate-300 text-slate-600 hover:bg-slate-50"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}

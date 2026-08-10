@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hors ligne — Pointage Chantier</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 360px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    p { margin: 0 0 20px; color: #475569; line-height: 1.5; }
+    button {
+      background: #0f766e;
+      color: #fff;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📡 Pas de connexion</h1>
+    <p>
+      Le pointage nécessite une connexion internet.<br />
+      Vérifiez votre réseau et réessayez.
+    </p>
+    <button onclick="location.reload()">Réessayer</button>
+  </div>
+</body>
+</html>

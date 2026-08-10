@@ -1,0 +1,78 @@
+{
+  "app": {
+    "name": "Pointage Chantier"
+  },
+  "login": {
+    "title": "Pointage Chantier",
+    "subtitle": "Connectez-vous avec le compte fourni par votre entreprise",
+    "email": "Email",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "loading": "Connexion…",
+    "error": "Email ou mot de passe incorrect."
+  },
+  "home": {
+    "hello": "Bonjour",
+    "arrival": "Arrivée",
+    "departure": "Départ",
+    "notYet": "—",
+    "pointArrival": "Pointer l'arrivée",
+    "pointDeparture": "Pointer le départ",
+    "dayComplete": "Journée complète ✅",
+    "logout": "Se déconnecter",
+    "flaggedNotice": "Enregistré avec un avertissement (GPS imprécis ou horloge décalée). Votre responsable pourra vérifier."
+  },
+  "inactive": {
+    "title": "Compte désactivé",
+    "body": "Votre compte a été désactivé. Contactez votre responsable."
+  },
+  "consent": {
+    "title": "Consentement — données personnelles",
+    "intro": "Pour enregistrer votre présence sur le chantier, cette application collecte :",
+    "item_photo": "une photo (selfie) prise au moment du pointage ;",
+    "item_gps": "votre position GPS et sa précision au moment du pointage ;",
+    "item_time": "la date et l'heure du pointage.",
+    "purpose": "Ces données servent uniquement à prouver votre présence sur le lieu de travail et à préparer la paie. Elles sont visibles par vous et par la direction.",
+    "retention": "Les photos sont supprimées automatiquement après 6 mois. Les horaires (sans photo) sont conservés pour la paie.",
+    "rights": "Vous pouvez à tout moment demander l'accès à vos données ou leur suppression auprès de votre employeur (RGPD).",
+    "accept": "J'accepte",
+    "refuse": "Je refuse",
+    "refusedTitle": "Consentement refusé",
+    "refusedBody": "Sans consentement, l'application ne peut pas être utilisée pour le pointage. Contactez votre responsable pour une alternative."
+  },
+  "capture": {
+    "titleArrival": "Selfie — arrivée",
+    "titleDeparture": "Selfie — départ",
+    "instructions": "Placez votre visage dans le cadre et appuyez sur le bouton.",
+    "take": "Prendre la photo",
+    "cancel": "Annuler",
+    "cameraError": "Impossible d'ouvrir la caméra. Utilisez le bouton ci-dessous.",
+    "fallbackButton": "Prendre un selfie avec l'appareil photo",
+    "gettingLocation": "Recherche de votre position GPS…"
+  },
+  "preview": {
+    "title": "Vérifiez avant de confirmer",
+    "time": "Heure",
+    "location": "Position",
+    "accuracy": "Précision",
+    "meters": "m",
+    "locationPending": "Position GPS en cours…",
+    "locationError": "Position GPS indisponible. Le pointage nécessite le GPS — activez la localisation et réessayez.",
+    "lowAccuracy": "Précision GPS faible (> 100 m). Déplacez-vous vers une zone dégagée si possible.",
+    "retryLocation": "Réessayer la localisation",
+    "confirm": "Confirmer le pointage",
+    "retake": "Reprendre la photo",
+    "sending": "Envoi en cours…"
+  },
+  "success": {
+    "arrival": "Arrivée enregistrée à",
+    "departure": "Départ enregistré à",
+    "back": "Retour à l'accueil"
+  },
+  "errors": {
+    "duplicate": "Vous avez déjà pointé ce type d'enregistrement aujourd'hui.",
+    "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+    "upload": "Échec de l'envoi de la photo. Réessayez.",
+    "generic": "Une erreur est survenue. Réessayez."
+  }
+}
