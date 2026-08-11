@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   const password = typeof body?.password === "string" ? body.password : "";
   const fullName =
     typeof body?.full_name === "string" ? body.full_name.trim() : "";
+  const role = body?.role === "admin" ? "admin" : "employee";
 
   if (!login || !fullName || password.length < 8) {
     return NextResponse.json(
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName, role: "employee", username },
+    user_metadata: { full_name: fullName, role, username },
   });
 
   if (error) {

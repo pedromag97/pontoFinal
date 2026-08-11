@@ -18,6 +18,14 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
+  // Um admin não se pode desativar a si próprio (evita lock-out).
+  if (body.active === false && id === session.user.id) {
+    return NextResponse.json(
+      { error: "Não podes desativar a tua própria conta." },
+      { status: 400 }
+    );
+  }
+
   const admin = createAdminClient();
 
   const updates: Record<string, unknown> = {};

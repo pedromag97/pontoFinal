@@ -17,6 +17,7 @@ export default function EmployeeManager({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"employee" | "admin">("employee");
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
     null
@@ -34,6 +35,7 @@ export default function EmployeeManager({
         full_name: name.trim(),
         login: email.trim(),
         password,
+        role,
       }),
     });
     setCreating(false);
@@ -46,6 +48,7 @@ export default function EmployeeManager({
     setName("");
     setEmail("");
     setPassword("");
+    setRole("employee");
     router.refresh();
   }
 
@@ -59,7 +62,8 @@ export default function EmployeeManager({
     });
     setBusyId(null);
     if (!res.ok) {
-      setMessage({ ok: false, text: t.employees.error });
+      const body = await res.json().catch(() => ({}));
+      setMessage({ ok: false, text: body.error ?? t.employees.error });
       return false;
     }
     router.refresh();
@@ -134,6 +138,15 @@ export default function EmployeeManager({
             onChange={(e) => setPassword(e.target.value)}
             className="min-w-44 rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as "employee" | "admin")}
+            aria-label={t.employees.roleLabel}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="employee">{t.employees.role_employee}</option>
+            <option value="admin">{t.employees.role_admin}</option>
+          </select>
           <button
             type="submit"
             disabled={creating}
@@ -142,6 +155,9 @@ export default function EmployeeManager({
             {creating ? t.employees.creating : t.employees.create}
           </button>
         </div>
+        {role === "admin" && (
+          <p className="mt-2 text-xs text-amber-700">{t.employees.adminHint}</p>
+        )}
       </form>
 
       {message && (
@@ -201,7 +217,7 @@ export default function EmployeeManager({
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {profile.role === "employee" && (
+                  {(
                     <div className="flex flex-wrap justify-end gap-2">
                       <ActionButton
                         onClick={() => rename(profile)}
