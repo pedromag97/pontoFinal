@@ -27,29 +27,11 @@ export async function PATCH(
   if (typeof body.active === "boolean") {
     updates.active = body.active;
   }
-  if (typeof body.maintenance_team === "boolean") {
-    updates.maintenance_team = body.maintenance_team;
-  }
 
   if (Object.keys(updates).length > 0) {
     const { error } = await admin.from("profiles").update(updates).eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-  }
-
-  // Ao marcar como manutenção, limpa retroativamente os "Fora da obra"
-  // desse funcionário — o backoffice associa a equipa depois dos registos.
-  if (body.maintenance_team === true) {
-    const { data: flagged } = await admin
-      .from("time_entries")
-      .select("id, flags")
-      .eq("employee_id", id)
-      .contains("flags", { out_of_area: true });
-    for (const entry of flagged ?? []) {
-      const flags = { ...(entry.flags as Record<string, boolean>) };
-      delete flags.out_of_area;
-      await admin.from("time_entries").update({ flags }).eq("id", entry.id);
     }
   }
 

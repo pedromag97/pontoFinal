@@ -11,6 +11,7 @@ import {
 } from "@/lib/format";
 import type { EntryType, Profile, TimeEntryWithName } from "@/types";
 import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
+import MaintenanceToggle from "@/components/admin/MaintenanceToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function RegistosPage({
 
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name, maintenance_team), worksites(name)")
+    .select("*, profiles(full_name), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("created_at", { ascending: false })
@@ -181,7 +182,8 @@ export default async function RegistosPage({
               const flags = entry.flags ?? {};
               const lowGps = !!flags.low_gps_accuracy;
               const clockDrift = !!flags.clock_drift;
-              const outOfArea = !!flags.out_of_area;
+              // manutenção justifica o "fora da obra" — deixa de ser suspeito
+              const outOfArea = !!flags.out_of_area && !entry.maintenance;
               const offline = !!flags.offline_sync;
               const purged = !!flags.photo_purged;
               const suspicious = lowGps || clockDrift || outOfArea;
@@ -212,11 +214,6 @@ export default async function RegistosPage({
                   </td>
                   <td className="px-3 py-2 font-medium">
                     {entry.profiles?.full_name ?? "?"}
-                    {entry.profiles?.maintenance_team && (
-                      <span title="Equipa de manutenção" className="ml-1">
-                        🔧
-                      </span>
-                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {formatDateShort(entry.entry_date)}
@@ -270,12 +267,17 @@ export default async function RegistosPage({
                       {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
                       {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
                       {outOfArea && <Badge>{t.entries.flagOutOfArea}</Badge>}
+                      {entry.maintenance && (
+                        <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                          {t.entries.flagMaintenance}
+                        </span>
+                      )}
                       {offline && (
                         <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
                           📡 {t.entries.flagOffline}
                         </span>
                       )}
-                      {!suspicious && !offline && (
+                      {!suspicious && !offline && !entry.maintenance && (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                           {t.entries.ok}
                         </span>
@@ -283,7 +285,13 @@ export default async function RegistosPage({
                     </div>
                   </td>
                   <td className="px-3 py-2">
-                    <DeleteEntryButton entryId={entry.id} />
+                    <div className="flex gap-1.5">
+                      <MaintenanceToggle
+                        entryId={entry.id}
+                        maintenance={entry.maintenance}
+                      />
+                      <DeleteEntryButton entryId={entry.id} />
+                    </div>
                   </td>
                 </tr>
               );

@@ -67,7 +67,9 @@ export default function DayMap({
       for (const entry of entries) {
         const flags = entry.flags ?? {};
         const suspicious =
-          !!flags.low_gps_accuracy || !!flags.clock_drift || !!flags.out_of_area;
+          !!flags.low_gps_accuracy ||
+          !!flags.clock_drift ||
+          (!!flags.out_of_area && !entry.maintenance);
         const position: [number, number] = [entry.latitude, entry.longitude];
         const photoUrl = entry.photo_path
           ? photoUrls[entry.photo_path]
@@ -76,7 +78,11 @@ export default function DayMap({
         const popup = [
           `<b>${escapeHtml(entry.profiles?.full_name ?? "?")}</b>`,
           `${t.types[entry.entry_type]} — ${formatTime(entry.created_at)}`,
-          entry.worksites?.name ? `🏗 ${escapeHtml(entry.worksites.name)}` : "",
+          entry.maintenance
+            ? "🔧 Manutenção"
+            : entry.worksites?.name
+              ? `🏗 ${escapeHtml(entry.worksites.name)}`
+              : "",
           suspicious ? "⚠️ suspeito" : "",
           photoUrl
             ? `<a href="${photoUrl}" target="_blank" rel="noreferrer">📷 ${t.map.openPhoto}</a>`

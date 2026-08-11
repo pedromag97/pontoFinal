@@ -68,7 +68,7 @@ export async function GET(request: Request) {
   const { supabase } = session;
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name, maintenance_team), worksites(name)")
+    .select("*, profiles(full_name), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("entry_date")
@@ -102,7 +102,9 @@ export async function GET(request: Request) {
     const suspiciousParts: string[] = [];
     if (flags.low_gps_accuracy) suspiciousParts.push("GPS impreciso");
     if (flags.clock_drift) suspiciousParts.push("Relógio desviado");
-    if (flags.out_of_area) suspiciousParts.push("Fora da obra");
+    if (flags.out_of_area && !entry.maintenance) {
+      suspiciousParts.push("Fora da obra");
+    }
     if (flags.offline_sync) suspiciousParts.push("Enviado offline");
     return {
       name: entry.profiles?.full_name ?? "?",
@@ -116,9 +118,9 @@ export async function GET(request: Request) {
       latitude: entry.latitude,
       longitude: entry.longitude,
       accuracy: entry.gps_accuracy !== null ? Math.round(entry.gps_accuracy) : "",
-      worksite:
-        entry.worksites?.name ??
-        (entry.profiles?.maintenance_team ? "Manutenção (zona livre)" : ""),
+      worksite: entry.maintenance
+        ? "Manutenção"
+        : (entry.worksites?.name ?? ""),
       suspicious: suspiciousParts.join(" + "),
       photoUrl: entry.photo_path
         ? (signedByPath.get(entry.photo_path) ?? "")

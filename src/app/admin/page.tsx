@@ -58,7 +58,8 @@ export default async function AdminDashboard({
     if (!emp.byDay.has(entry.entry_date)) emp.byDay.set(entry.entry_date, []);
     emp.byDay.get(entry.entry_date)!.push(entry);
     const flags = entry.flags ?? {};
-    if (flags.low_gps_accuracy || flags.clock_drift || flags.out_of_area) {
+    const outOfArea = flags.out_of_area && !entry.maintenance;
+    if (flags.low_gps_accuracy || flags.clock_drift || outOfArea) {
       emp.flagged += 1;
     }
   }
