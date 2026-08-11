@@ -122,9 +122,12 @@
     "dashboard": "Resumo",
     "entries": "Registos",
     "map": "Mapa",
+    "management": "Gestão",
     "employees": "Funcionários",
     "worksites": "Obras",
     "holidays": "Feriados",
+    "lunch": "Horário de almoço",
+    "privacy": "RGPD",
     "logout": "Sair"
   },
   "holidays": {

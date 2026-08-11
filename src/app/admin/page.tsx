@@ -2,9 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
 import { monthBounds, monthWorksite, workedHours } from "@/lib/format";
-import type { LunchScheduleDay, TimeEntryWithName } from "@/types";
-import RetentionButton from "@/components/admin/RetentionButton";
-import LunchScheduleEditor from "@/components/admin/LunchScheduleEditor";
+import type { TimeEntryWithName } from "@/types";
 import SaturdayToggle from "@/components/admin/SaturdayToggle";
 
 export const dynamic = "force-dynamic";
@@ -40,11 +38,6 @@ export default async function AdminDashboard({
     .order("created_at");
 
   const entries = (data ?? []) as TimeEntryWithName[];
-
-  const { data: scheduleDays } = await supabase
-    .from("lunch_schedule")
-    .select("*")
-    .order("weekday");
 
   const { data: employees } = await supabase
     .from("profiles")
@@ -198,23 +191,6 @@ export default async function AdminDashboard({
         </table>
       </div>
 
-      <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-1 font-semibold">🍽️ {t.dashboard.scheduleTitle}</h2>
-        <p className="mb-4 text-sm text-slate-500">{t.dashboard.scheduleBody}</p>
-        <LunchScheduleEditor
-          initialDays={(scheduleDays as LunchScheduleDay[] | null) ?? null}
-        />
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-1 font-semibold">🗑️ {t.dashboard.retentionTitle}</h2>
-        <p className="mb-4 text-sm text-slate-500">{t.dashboard.retentionBody}</p>
-        <RetentionButton
-          label={t.dashboard.retentionButton}
-          confirmText={t.dashboard.retentionConfirm}
-          doneSuffix={t.dashboard.retentionDone}
-        />
-      </div>
     </div>
   );
 }
