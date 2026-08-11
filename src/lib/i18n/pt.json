@@ -48,6 +48,7 @@
   },
   "sheet": {
     "title": "Folha do mês",
+    "download": "Descarregar folha para assinar (PDF)",
     "back": "← Voltar",
     "daysWorked": "Dias registados",
     "totalHours": "Horas",
@@ -168,6 +169,8 @@
     "daysPresent": "Dias registados",
     "totalHours": "Horas trabalhadas",
     "flagged": "Registos suspeitos",
+    "saturdays": "Sábados na folha",
+    "sheet": "Folha",
     "noData": "Sem registos neste mês.",
     "scheduleTitle": "Horário de almoço",
     "scheduleBody": "Nos dias marcados, os funcionários têm de registar também a saída para almoço e o regresso (4 registos/dia). Nos restantes, só entrada e saída.",

@@ -121,6 +121,13 @@ export default async function FolhaPage({
         </div>
       </div>
 
+      <a
+        href={`/api/sheet?m=${month}`}
+        className="mb-4 block rounded-2xl bg-teal-700 py-3.5 text-center text-sm font-bold text-white active:bg-teal-800"
+      >
+        ⬇ {t.sheet.download}
+      </a>
+
       {days.length === 0 ? (
         <p className="rounded-2xl bg-white py-8 text-center text-slate-400 shadow-sm">
           {t.sheet.noData}

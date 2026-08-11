@@ -8,7 +8,14 @@ França), com painel de gestão em Portugal. **Toda a app está em português**
   automático de GPS + data/hora → confirmação. Entrada e saída por dia; nos
   dias configurados pelo admin, também saída e volta do almoço (4 registos).
   Inclui a "Folha do mês": consulta dos próprios registos com horas por dia
-  e totais mensais (dias + horas).
+  e totais mensais (dias + horas), e o download da **folha de presença em PDF**
+  (layout tipo "Registre de Présence": linha por dia, blocos manhã/tarde com
+  coluna Ass. para assinar em papel, horas arredondadas aos 15 min, feriados
+  franceses marcados) — o funcionário assina e envia à empresa. O admin também
+  descarrega a folha de qualquer funcionário no Resumo, onde controla, por
+  funcionário e por mês, se os sábados são apontados na folha (por defeito não;
+  os registos ficam sempre no sistema). Migração:
+  `supabase/migrations/2026-08-12_folha_presenca.sql`.
 - **Painel de gestão:** funcionários, registos com foto/mapa/flags de fraude,
   horário de almoço por dia da semana, exportação CSV/Excel com horas
   trabalhadas (almoço descontado), resumo mensal, retenção RGPD.

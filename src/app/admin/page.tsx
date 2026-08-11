@@ -5,16 +5,19 @@ import { monthBounds, monthWorksite, workedHours } from "@/lib/format";
 import type { LunchScheduleDay, TimeEntryWithName } from "@/types";
 import RetentionButton from "@/components/admin/RetentionButton";
 import LunchScheduleEditor from "@/components/admin/LunchScheduleEditor";
+import SaturdayToggle from "@/components/admin/SaturdayToggle";
 
 export const dynamic = "force-dynamic";
 
 const t = getDictionary("pt");
 
 interface Row {
+  id: string;
   name: string;
   days: number;
   hours: number;
   flagged: number;
+  includeSaturdays: boolean;
 }
 
 export default async function AdminDashboard({
@@ -43,6 +46,23 @@ export default async function AdminDashboard({
     .select("*")
     .order("weekday");
 
+  const { data: employees } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "employee")
+    .order("full_name");
+
+  const { data: sheetSettings } = await supabase
+    .from("sheet_settings")
+    .select("employee_id, include_saturdays")
+    .eq("month", month);
+  const saturdaysByEmployee = new Map(
+    (sheetSettings ?? []).map((s) => [
+      s.employee_id as string,
+      s.include_saturdays as boolean,
+    ])
+  );
+
   // Agrupar por funcionário: dias com entrada, horas entrada→saída, suspeitos.
   const byEmployee = new Map<string, { name: string; byDay: Map<string, TimeEntryWithName[]>; flagged: number }>();
   for (const entry of entries) {
@@ -64,15 +84,27 @@ export default async function AdminDashboard({
     }
   }
 
-  const rows: Row[] = [...byEmployee.values()]
+  // Todos os funcionários aparecem (mesmo sem registos no mês) — a folha
+  // e o controlo de sábados existem para todos.
+  const rows: Row[] = ((employees ?? []) as { id: string; full_name: string }[])
     .map((emp) => {
+      const stats = byEmployee.get(emp.id);
       let days = 0;
       let hours = 0;
-      for (const dayEntries of emp.byDay.values()) {
-        if (dayEntries.some((e) => e.entry_type === "entrada")) days += 1;
-        hours += workedHours(dayEntries) ?? 0;
+      if (stats) {
+        for (const dayEntries of stats.byDay.values()) {
+          if (dayEntries.some((e) => e.entry_type === "entrada")) days += 1;
+          hours += workedHours(dayEntries) ?? 0;
+        }
       }
-      return { name: emp.name, days, hours: Math.round(hours * 100) / 100, flagged: emp.flagged };
+      return {
+        id: emp.id,
+        name: emp.full_name || "—",
+        days,
+        hours: Math.round(hours * 100) / 100,
+        flagged: stats?.flagged ?? 0,
+        includeSaturdays: saturdaysByEmployee.get(emp.id) ?? false,
+      };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -117,18 +149,20 @@ export default async function AdminDashboard({
               <th className="px-4 py-3 text-right">{t.dashboard.daysPresent}</th>
               <th className="px-4 py-3 text-right">{t.dashboard.totalHours}</th>
               <th className="px-4 py-3 text-right">{t.dashboard.flagged}</th>
+              <th className="px-4 py-3 text-center">{t.dashboard.saturdays}</th>
+              <th className="px-4 py-3 text-center">{t.dashboard.sheet}</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   {t.dashboard.noData}
                 </td>
               </tr>
             )}
             {rows.map((row) => (
-              <tr key={row.name} className="border-b border-slate-100 last:border-0">
+              <tr key={row.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-4 py-3 font-medium">{row.name}</td>
                 <td className="px-4 py-3 text-right">{row.days}</td>
                 <td className="px-4 py-3 text-right">
@@ -142,6 +176,21 @@ export default async function AdminDashboard({
                   ) : (
                     <span className="text-slate-300">0</span>
                   )}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <SaturdayToggle
+                    employeeId={row.id}
+                    month={month}
+                    initial={row.includeSaturdays}
+                  />
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <a
+                    href={`/api/sheet?m=${month}&employee=${row.id}`}
+                    className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    ⬇ PDF
+                  </a>
                 </td>
               </tr>
             ))}
