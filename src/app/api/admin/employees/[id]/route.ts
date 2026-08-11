@@ -18,10 +18,16 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  // Um admin não se pode desativar a si próprio (evita lock-out).
+  // Um admin não se pode desativar nem despromover a si próprio (lock-out).
   if (body.active === false && id === session.user.id) {
     return NextResponse.json(
       { error: "Não podes desativar a tua própria conta." },
+      { status: 400 }
+    );
+  }
+  if (typeof body.role === "string" && id === session.user.id) {
+    return NextResponse.json(
+      { error: "Não podes alterar o papel da tua própria conta." },
       { status: 400 }
     );
   }
@@ -34,6 +40,9 @@ export async function PATCH(
   }
   if (typeof body.active === "boolean") {
     updates.active = body.active;
+  }
+  if (body.role === "admin" || body.role === "employee") {
+    updates.role = body.role;
   }
 
   if (Object.keys(updates).length > 0) {

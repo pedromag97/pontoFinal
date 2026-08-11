@@ -242,6 +242,28 @@ export default function EmployeeManager({
                           : t.employees.activate}
                       </ActionButton>
                       <ActionButton
+                        onClick={async () => {
+                          const toAdmin = profile.role === "employee";
+                          const confirmText = toAdmin
+                            ? t.employees.makeAdminConfirm
+                            : t.employees.makeEmployeeConfirm;
+                          if (!confirm(confirmText)) return;
+                          const ok = await patchEmployee(profile.id, {
+                            role: toAdmin ? "admin" : "employee",
+                          });
+                          if (ok)
+                            setMessage({
+                              ok: true,
+                              text: t.employees.roleChanged,
+                            });
+                        }}
+                        disabled={busyId === profile.id}
+                      >
+                        {profile.role === "employee"
+                          ? t.employees.makeAdmin
+                          : t.employees.makeEmployee}
+                      </ActionButton>
+                      <ActionButton
                         onClick={() => eraseData(profile)}
                         disabled={busyId === profile.id}
                         danger
