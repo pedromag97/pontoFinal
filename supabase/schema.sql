@@ -16,6 +16,9 @@ create table public.profiles (
   full_name text not null default '',
   role text not null default 'employee' check (role in ('employee', 'admin')),
   active boolean not null default true,
+  -- Equipa de manutenção: grandes zonas de intervenção — os registos deste
+  -- funcionário nunca levam a flag out_of_area.
+  maintenance_team boolean not null default false,
   preferred_language text not null default 'fr',
   consent_given_at timestamptz,
   created_at timestamptz not null default now()
@@ -168,6 +171,7 @@ declare
   f jsonb := '{}'::jsonb;
   matched_id uuid;
   has_sites boolean;
+  is_maintenance boolean;
 begin
   new.created_at := now();
   new.synced_offline := coalesce(new.synced_offline, false);
@@ -187,6 +191,9 @@ begin
     f := f || jsonb_build_object('low_gps_accuracy', true);
   end if;
 
+  select coalesce(p.maintenance_team, false) into is_maintenance
+  from public.profiles p where p.id = new.employee_id;
+
   -- Geofence: só quando existe pelo menos uma obra ativa.
   select exists (select 1 from public.worksites where active) into has_sites;
   if has_sites then
@@ -201,7 +208,7 @@ begin
 
     if matched_id is not null then
       new.worksite_id := matched_id;
-    else
+    elsif not is_maintenance then
       f := f || jsonb_build_object('out_of_area', true);
     end if;
   end if;

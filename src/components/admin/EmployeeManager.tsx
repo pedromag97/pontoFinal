@@ -180,6 +180,11 @@ export default function EmployeeManager({
                       ? t.employees.role_admin
                       : t.employees.role_employee}
                   </span>
+                  {profile.maintenance_team && (
+                    <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                      {t.employees.maintenanceBadge}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-slate-600">
                   {profile.username ?? "—"}
@@ -224,6 +229,26 @@ export default function EmployeeManager({
                         {profile.active
                           ? t.employees.deactivate
                           : t.employees.activate}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={async () => {
+                          const next = !profile.maintenance_team;
+                          const ok = await patchEmployee(profile.id, {
+                            maintenance_team: next,
+                          });
+                          if (ok)
+                            setMessage({
+                              ok: true,
+                              text: next
+                                ? t.employees.maintenanceOnDone
+                                : t.employees.maintenanceOffDone,
+                            });
+                        }}
+                        disabled={busyId === profile.id}
+                      >
+                        {profile.maintenance_team
+                          ? t.employees.maintenanceRemove
+                          : t.employees.maintenanceAdd}
                       </ActionButton>
                       <ActionButton
                         onClick={() => eraseData(profile)}

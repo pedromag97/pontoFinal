@@ -47,7 +47,7 @@ export default async function RegistosPage({
 
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name), worksites(name)")
+    .select("*, profiles(full_name, maintenance_team), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("created_at", { ascending: false })
@@ -212,6 +212,11 @@ export default async function RegistosPage({
                   </td>
                   <td className="px-3 py-2 font-medium">
                     {entry.profiles?.full_name ?? "?"}
+                    {entry.profiles?.maintenance_team && (
+                      <span title="Equipa de manutenção" className="ml-1">
+                        🔧
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {formatDateShort(entry.entry_date)}

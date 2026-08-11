@@ -68,7 +68,7 @@ export async function GET(request: Request) {
   const { supabase } = session;
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name), worksites(name)")
+    .select("*, profiles(full_name, maintenance_team), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("entry_date")
@@ -116,7 +116,9 @@ export async function GET(request: Request) {
       latitude: entry.latitude,
       longitude: entry.longitude,
       accuracy: entry.gps_accuracy !== null ? Math.round(entry.gps_accuracy) : "",
-      worksite: entry.worksites?.name ?? "",
+      worksite:
+        entry.worksites?.name ??
+        (entry.profiles?.maintenance_team ? "Manutenção (zona livre)" : ""),
       suspicious: suspiciousParts.join(" + "),
       photoUrl: entry.photo_path
         ? (signedByPath.get(entry.photo_path) ?? "")

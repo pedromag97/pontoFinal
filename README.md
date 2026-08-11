@@ -101,6 +101,7 @@ standalone, com ícone próprio.
 | 1 registo de cada tipo por dia | Índice único `(employee_id, entry_type, entry_date)` na BD. Tipos: entrada, saída almoço, volta almoço, saída. |
 | Almoço por dia da semana | Tabela `lunch_schedule` (editável no Resumo do painel). Nos dias marcados, a app do funcionário pede os 4 registos; as horas exportadas descontam o intervalo. |
 | Raio geográfico por obra | Página Obras no painel: nome + coordenadas + raio. O trigger associa cada registo à obra mais próxima dentro do raio; fora de todas as obras ativas → flag "Fora da obra". Sem obras ativas, a verificação fica desligada. |
+| Equipa de manutenção | Flag por funcionário (painel Funcionários → "→ Manutenção") para equipas com grandes zonas de intervenção: os registos deles nunca levam "Fora da obra" (a associação à obra continua quando aplicável). Ao marcar, os "Fora da obra" antigos desse funcionário são limpos. |
 | Registos offline | Sem rede, o registo (selfie+GPS) fica no IndexedDB do telemóvel e sincroniza sozinho quando a ligação volta. Estes registos ficam com a flag "Enviado offline" e usam a hora do telemóvel como data — a hora oficial do servidor não é possível, por isso a gestão deve revê-los. O service worker serve a app do cache para ela abrir offline. |
 | Captura direta | `getUserMedia` com `facingMode: 'user'` (a foto é tirada dentro da app); fallback `<input capture="user">` só se a câmara falhar. |
 | Fotos privadas | Bucket não-público; acesso só por signed URLs com expiração (1 h no painel, 7 dias nos exports). |
@@ -193,6 +194,8 @@ public/                         # manifest.json, sw.js, ícones, offline.html
   - `2026-08-11_fuso_lisboa.sql`: fuso do cálculo do dia → Europe/Lisbon.
   - `2026-08-11_lembretes.sql`: tabelas de push + agendamento pg_cron dos
     lembretes (substituir `<CRON_SECRET>` antes de correr a parte 2).
+  - `2026-08-11_manutencao.sql`: coluna `maintenance_team` em profiles +
+    trigger que isenta a equipa de manutenção da flag "Fora da obra".
 - **Lembretes push:** o funcionário ativa as notificações na app (banner 🔔).
   Um cron no Supabase (pg_cron, 15 em 15 min) chama `/api/cron/reminders`,
   que envia: "volta do almoço?" (2 h após a saída para almoço sem regresso) e

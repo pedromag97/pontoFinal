@@ -12,6 +12,7 @@ export interface Profile {
   full_name: string;
   role: Role;
   active: boolean;
+  maintenance_team: boolean;
   preferred_language: string;
   consent_given_at: string | null;
   created_at: string;
@@ -34,7 +35,7 @@ export interface TimeEntry {
 }
 
 export interface TimeEntryWithName extends TimeEntry {
-  profiles: { full_name: string } | null;
+  profiles: { full_name: string; maintenance_team?: boolean } | null;
   worksites: { name: string } | null;
 }
 
