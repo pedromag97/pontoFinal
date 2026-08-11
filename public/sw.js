@@ -3,7 +3,7 @@
 // - navegações: rede primeiro; sem rede, serve a última versão em cache da
 //   página (permite abrir a app offline e registar para a fila local),
 //   com offline.html como último recurso.
-const CACHE = "pointage-v2";
+const CACHE = "ponto-v3";
 const PRECACHE = [
   "/offline.html",
   "/manifest.json",
@@ -42,14 +42,14 @@ self.addEventListener("push", (event) => {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
-      data: { url: data.url || "/pointage" },
+      data: { url: data.url || "/registo" },
     })
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/pointage";
+  const url = event.notification.data?.url || "/registo";
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })

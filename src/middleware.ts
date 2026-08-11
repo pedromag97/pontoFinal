@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
     path === "/api/admin/retention" && request.method === "GET";
   const isProtected =
     !isCronCall &&
-    (path.startsWith("/pointage") ||
+    (path.startsWith("/registo") ||
       path.startsWith("/admin") ||
       path.startsWith("/api/admin"));
 

@@ -121,7 +121,7 @@ export async function GET(request: Request) {
       .eq("user_id", employeeId);
     if (!subs || subs.length === 0) continue;
 
-    const payload = JSON.stringify({ ...MESSAGES[kind], url: "/pointage" });
+    const payload = JSON.stringify({ ...MESSAGES[kind], url: "/registo" });
     let delivered = false;
     for (const sub of subs) {
       try {

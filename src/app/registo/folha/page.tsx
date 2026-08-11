@@ -32,7 +32,7 @@ export default async function FolhaPage({
   if (!session) redirect("/login");
   const { supabase, profile } = session;
   if (profile.role === "admin") redirect("/admin");
-  if (!profile.active) redirect("/pointage");
+  if (!profile.active) redirect("/registo");
 
   const params = await searchParams;
   const month = /^\d{4}-\d{2}$/.test(params.m ?? "")
@@ -78,7 +78,7 @@ export default async function FolhaPage({
     <main className="mx-auto flex min-h-dvh max-w-md flex-col p-5">
       <header className="mb-4 flex items-center justify-between">
         <Link
-          href="/pointage"
+          href="/registo"
           className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
         >
           {t.sheet.back}
@@ -88,14 +88,14 @@ export default async function FolhaPage({
 
       <div className="mb-4 flex items-center justify-between rounded-2xl bg-white px-3 py-2 shadow-sm">
         <Link
-          href={`/pointage/folha?m=${prev}`}
+          href={`/registo/folha?m=${prev}`}
           className="rounded-lg px-3 py-1.5 text-lg text-slate-500 active:bg-slate-100"
         >
           ←
         </Link>
         <span className="font-semibold capitalize">{monthLabel}</span>
         <Link
-          href={`/pointage/folha?m=${next}`}
+          href={`/registo/folha?m=${next}`}
           className="rounded-lg px-3 py-1.5 text-lg text-slate-500 active:bg-slate-100"
         >
           →

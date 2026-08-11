@@ -16,7 +16,7 @@ export default async function AdminLayout({
   const session = await getSessionProfile();
   if (!session) redirect("/login");
   if (session.profile.role !== "admin" || !session.profile.active) {
-    redirect("/pointage");
+    redirect("/registo");
   }
 
   return (

@@ -80,7 +80,7 @@ Depois de teres o admin:
    email: internamente é criado `joao.silva@ponto.lusocabo.com`, que nunca
    recebe correio; também podes usar um email real).
 2. Abre uma janela anónima (ou o telemóvel), faz login com essa conta —
-   aparece o ecrã de consentimento RGPD (FR) e depois o fluxo de pointage.
+   aparece o ecrã de consentimento RGPD e depois o fluxo de registo.
 
 ## 5. Deploy na Vercel
 
@@ -155,7 +155,7 @@ implementadas:
 src/
 ├── app/
 │   ├── login/                  # login (FR)
-│   ├── pointage/               # app do funcionário (FR)
+│   ├── registo/                # app do funcionário
 │   ├── admin/                  # painel de gestão (PT)
 │   │   ├── registos/           # tabela filtrável + exports
 │   │   └── funcionarios/       # gestão de contas
