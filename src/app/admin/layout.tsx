@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSessionProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n";
 import LogoutButton from "@/components/LogoutButton";
+import NavDropdown from "@/components/admin/NavDropdown";
 
 export const dynamic = "force-dynamic";
 
@@ -32,20 +33,15 @@ export default async function AdminLayout({
             <NavLink href="/admin">{t.nav.dashboard}</NavLink>
             <NavLink href="/admin/registos">{t.nav.entries}</NavLink>
             <NavLink href="/admin/mapa">{t.nav.map}</NavLink>
-            <details className="group relative">
-              <summary className="cursor-pointer select-none list-none rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-                {t.nav.management} <span className="text-xs">▾</span>
-              </summary>
-              <div className="absolute left-0 z-20 mt-1 min-w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
-                <MenuLink href="/admin/funcionarios">
-                  👷 {t.nav.employees}
-                </MenuLink>
-                <MenuLink href="/admin/obras">🏗 {t.nav.worksites}</MenuLink>
-                <MenuLink href="/admin/feriados">📅 {t.nav.holidays}</MenuLink>
-                <MenuLink href="/admin/almoco">🍽️ {t.nav.lunch}</MenuLink>
-                <MenuLink href="/admin/rgpd">🔒 {t.nav.privacy}</MenuLink>
-              </div>
-            </details>
+            <NavDropdown label={t.nav.management}>
+              <MenuLink href="/admin/funcionarios">
+                👷 {t.nav.employees}
+              </MenuLink>
+              <MenuLink href="/admin/obras">🏗 {t.nav.worksites}</MenuLink>
+              <MenuLink href="/admin/feriados">📅 {t.nav.holidays}</MenuLink>
+              <MenuLink href="/admin/almoco">🍽️ {t.nav.lunch}</MenuLink>
+              <MenuLink href="/admin/rgpd">🔒 {t.nav.privacy}</MenuLink>
+            </NavDropdown>
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-sm text-slate-500 sm:inline">
