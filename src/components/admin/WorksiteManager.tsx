@@ -11,6 +11,41 @@ const t = getDictionary("pt");
 
 const COORDS_RE = /^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/;
 
+interface WorksiteFields {
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius_m: number;
+}
+
+// Valida nome + "lat, lng" + raio; devolve null se inválido.
+function parseFields(
+  name: string,
+  coords: string,
+  radius: string
+): { fields: WorksiteFields | null; error: string | null } {
+  const match = COORDS_RE.exec(coords);
+  if (!match) return { fields: null, error: t.worksites.invalidCoords };
+  const latitude = parseFloat(match[1].replace(",", "."));
+  const longitude = parseFloat(match[2].replace(",", "."));
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    Math.abs(latitude) > 90 ||
+    Math.abs(longitude) > 180
+  ) {
+    return { fields: null, error: t.worksites.invalidCoords };
+  }
+  const radiusM = parseInt(radius, 10);
+  if (!Number.isFinite(radiusM) || radiusM < 50 || radiusM > 50000) {
+    return { fields: null, error: t.worksites.invalidRadius };
+  }
+  return {
+    fields: { name: name.trim(), latitude, longitude, radius_m: radiusM },
+    error: null,
+  };
+}
+
 export default function WorksiteManager({
   initialWorksites,
 }: {
@@ -25,43 +60,28 @@ export default function WorksiteManager({
     null
   );
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{
+    id: string;
+    name: string;
+    coords: string;
+    radius: string;
+  } | null>(null);
 
   async function createWorksite(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
-
-    const match = COORDS_RE.exec(coords);
-    if (!match) {
-      setMessage({ ok: false, text: t.worksites.invalidCoords });
+    const { fields, error } = parseFields(name, coords, radius);
+    if (!fields) {
+      setMessage({ ok: false, text: error! });
       return;
     }
-    const latitude = parseFloat(match[1].replace(",", "."));
-    const longitude = parseFloat(match[2].replace(",", "."));
-    const radiusM = parseInt(radius, 10);
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude) ||
-      Math.abs(latitude) > 90 ||
-      Math.abs(longitude) > 180
-    ) {
-      setMessage({ ok: false, text: t.worksites.invalidCoords });
-      return;
-    }
-    if (!Number.isFinite(radiusM) || radiusM < 50 || radiusM > 50000) {
-      setMessage({ ok: false, text: t.worksites.invalidRadius });
-      return;
-    }
-
     setCreating(true);
     const supabase = createClient();
-    const { error } = await supabase.from("worksites").insert({
-      name: name.trim(),
-      latitude,
-      longitude,
-      radius_m: radiusM,
-    });
+    const { error: insertError } = await supabase
+      .from("worksites")
+      .insert(fields);
     setCreating(false);
-    if (error) {
+    if (insertError) {
       setMessage({ ok: false, text: t.worksites.error });
       return;
     }
@@ -83,9 +103,35 @@ export default function WorksiteManager({
     setBusyId(null);
     if (error) {
       setMessage({ ok: false, text: t.worksites.error });
-      return;
+      return false;
     }
     router.refresh();
+    return true;
+  }
+
+  function startEdit(site: Worksite) {
+    setMessage(null);
+    setEditing({
+      id: site.id,
+      name: site.name,
+      coords: `${site.latitude}, ${site.longitude}`,
+      radius: String(site.radius_m),
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const { fields, error } = parseFields(
+      editing.name,
+      editing.coords,
+      editing.radius
+    );
+    if (!fields || !fields.name) {
+      setMessage({ ok: false, text: error ?? t.worksites.error });
+      return;
+    }
+    const ok = await update(editing.id, fields);
+    if (ok) setEditing(null);
   }
 
   async function remove(site: Worksite) {
@@ -93,24 +139,16 @@ export default function WorksiteManager({
     setBusyId(site.id);
     setMessage(null);
     const supabase = createClient();
-    const { error } = await supabase.from("worksites").delete().eq("id", site.id);
+    const { error } = await supabase
+      .from("worksites")
+      .delete()
+      .eq("id", site.id);
     setBusyId(null);
     if (error) {
       setMessage({ ok: false, text: t.worksites.error });
       return;
     }
     router.refresh();
-  }
-
-  function editRadius(site: Worksite) {
-    const input = prompt(t.worksites.editPrompt, String(site.radius_m));
-    if (!input) return;
-    const value = parseInt(input, 10);
-    if (!Number.isFinite(value) || value < 50 || value > 50000) {
-      setMessage({ ok: false, text: t.worksites.invalidRadius });
-      return;
-    }
-    update(site.id, { radius_m: value });
   }
 
   return (
@@ -192,61 +230,140 @@ export default function WorksiteManager({
                 </td>
               </tr>
             )}
-            {initialWorksites.map((site) => (
-              <tr
-                key={site.id}
-                className={`border-b border-slate-100 last:border-0 ${!site.active ? "opacity-50" : ""}`}
-              >
-                <td className="px-4 py-3 font-medium">{site.name}</td>
-                <td className="px-4 py-3">
-                  <a
-                    href={mapsUrl(site.latitude, site.longitude)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-xs text-teal-700 underline"
-                  >
-                    🗺 {site.latitude.toFixed(5)}, {site.longitude.toFixed(5)}
-                  </a>
-                </td>
-                <td className="px-4 py-3 text-right">{site.radius_m} m</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      site.active
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {site.active ? t.worksites.active : t.worksites.inactive}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <ActionButton
-                      onClick={() => editRadius(site)}
-                      disabled={busyId === site.id}
-                    >
-                      {t.worksites.edit}
-                    </ActionButton>
-                    <ActionButton
-                      onClick={() => update(site.id, { active: !site.active })}
-                      disabled={busyId === site.id}
-                    >
-                      {site.active
-                        ? t.worksites.deactivate
-                        : t.worksites.activate}
-                    </ActionButton>
-                    <ActionButton
-                      onClick={() => remove(site)}
-                      disabled={busyId === site.id}
-                      danger
-                    >
-                      {t.worksites.delete}
-                    </ActionButton>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {initialWorksites.map((site) => {
+              const isEditing = editing?.id === site.id;
+              const busy = busyId === site.id;
+              return (
+                <tr
+                  key={site.id}
+                  className={`border-b border-slate-100 last:border-0 ${!site.active && !isEditing ? "opacity-50" : ""}`}
+                >
+                  {isEditing ? (
+                    <>
+                      <td className="px-4 py-2">
+                        <input
+                          value={editing.name}
+                          onChange={(e) =>
+                            setEditing({ ...editing, name: e.target.value })
+                          }
+                          className="w-full min-w-40 rounded-lg border border-teal-500 px-2 py-1.5 text-sm"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          value={editing.coords}
+                          onChange={(e) =>
+                            setEditing({ ...editing, coords: e.target.value })
+                          }
+                          placeholder={t.worksites.coords}
+                          className="w-full min-w-44 rounded-lg border border-teal-500 px-2 py-1.5 font-mono text-xs"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <input
+                          type="number"
+                          min={50}
+                          max={50000}
+                          value={editing.radius}
+                          onChange={(e) =>
+                            setEditing({ ...editing, radius: e.target.value })
+                          }
+                          className="w-24 rounded-lg border border-teal-500 px-2 py-1.5 text-right text-sm"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            site.active
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {site.active
+                            ? t.worksites.active
+                            : t.worksites.inactive}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button
+                            onClick={saveEdit}
+                            disabled={busy}
+                            className="rounded-lg bg-teal-700 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+                          >
+                            {t.worksites.save}
+                          </button>
+                          <ActionButton
+                            onClick={() => setEditing(null)}
+                            disabled={busy}
+                          >
+                            {t.worksites.cancel}
+                          </ActionButton>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3 font-medium">{site.name}</td>
+                      <td className="px-4 py-3">
+                        <a
+                          href={mapsUrl(site.latitude, site.longitude)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-xs text-teal-700 underline"
+                        >
+                          🗺 {site.latitude.toFixed(5)},{" "}
+                          {site.longitude.toFixed(5)}
+                        </a>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {site.radius_m} m
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            site.active
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {site.active
+                            ? t.worksites.active
+                            : t.worksites.inactive}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <ActionButton
+                            onClick={() => startEdit(site)}
+                            disabled={busy}
+                          >
+                            {t.worksites.edit}
+                          </ActionButton>
+                          <ActionButton
+                            onClick={() =>
+                              update(site.id, { active: !site.active })
+                            }
+                            disabled={busy}
+                          >
+                            {site.active
+                              ? t.worksites.deactivate
+                              : t.worksites.activate}
+                          </ActionButton>
+                          <ActionButton
+                            onClick={() => remove(site)}
+                            disabled={busy}
+                            danger
+                          >
+                            {t.worksites.delete}
+                          </ActionButton>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
