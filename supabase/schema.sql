@@ -78,6 +78,28 @@ values (0, false), (1, false), (2, false), (3, false),
        (4, false), (5, false), (6, false)
 on conflict (weekday) do nothing;
 
+-- Subscrições de notificações push (lembretes; uma por dispositivo).
+create table public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Lembretes já enviados (máx. 1 por funcionário/dia/tipo).
+create table public.reminders_sent (
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  entry_date date not null,
+  kind text not null,
+  sent_at timestamptz not null default now(),
+  primary key (employee_id, entry_date, kind)
+);
+
+-- NOTA: o agendamento dos lembretes (pg_cron → /api/cron/reminders) está em
+-- supabase/migrations/2026-08-11_lembretes.sql, parte 2 — requer o CRON_SECRET.
+
 -- ------------------------------------------------------------
 -- 2. FUNÇÕES E TRIGGERS
 -- ------------------------------------------------------------
@@ -201,6 +223,16 @@ alter table public.profiles enable row level security;
 alter table public.time_entries enable row level security;
 alter table public.lunch_schedule enable row level security;
 alter table public.worksites enable row level security;
+alter table public.push_subscriptions enable row level security;
+alter table public.reminders_sent enable row level security;
+
+-- push_subscriptions: cada um gere as suas subscrições.
+create policy "push_own"
+  on public.push_subscriptions for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- reminders_sent: só o servidor (service role) — sem políticas authenticated.
 
 -- worksites: todos leem (o trigger corre no contexto do funcionário);
 -- só admins criam/alteram/apagam.

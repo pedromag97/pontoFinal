@@ -10,6 +10,7 @@ import {
   looksOffline,
   syncPending,
 } from "@/lib/offline";
+import { enablePush, pushSupported } from "@/lib/push";
 import type {
   EntryType,
   LunchScheduleDay,
@@ -66,6 +67,36 @@ export default function EmployeeHome({
   const [lastWasOffline, setLastWasOffline] = useState(false);
   const geoRequestId = useRef(0);
   const syncing = useRef(false);
+  const [pushBanner, setPushBanner] = useState<"hidden" | "ask" | "enabled">(
+    "hidden"
+  );
+
+  // Lembretes push: mostra o convite quando suportado e ainda não decidido;
+  // se a permissão já foi dada, garante silenciosamente que a subscrição existe.
+  useEffect(() => {
+    if (!pushSupported()) return;
+    if (localStorage.getItem("push-dismissed") === "1") return;
+    if (Notification.permission === "granted") {
+      enablePush(profile.id);
+      return;
+    }
+    if (Notification.permission === "default") setPushBanner("ask");
+  }, [profile.id]);
+
+  async function handleEnablePush() {
+    const ok = await enablePush(profile.id);
+    if (ok) {
+      setPushBanner("enabled");
+      setTimeout(() => setPushBanner("hidden"), 3000);
+    } else {
+      setPushBanner("hidden");
+    }
+  }
+
+  function dismissPush() {
+    localStorage.setItem("push-dismissed", "1");
+    setPushBanner("hidden");
+  }
 
   // ---------- sincronização offline ----------
   const runSync = useCallback(async () => {
@@ -430,6 +461,32 @@ export default function EmployeeHome({
         </div>
         <LogoutButton label={t.home.logout} />
       </header>
+
+      {pushBanner === "ask" && (
+        <div className="mb-5 rounded-2xl bg-white p-4 shadow-sm">
+          <p className="font-semibold">🔔 {t.home.pushTitle}</p>
+          <p className="mb-3 mt-1 text-sm text-slate-500">{t.home.pushBody}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleEnablePush}
+              className="flex-1 rounded-xl bg-teal-700 py-2.5 text-sm font-semibold text-white active:bg-teal-800"
+            >
+              {t.home.pushEnable}
+            </button>
+            <button
+              onClick={dismissPush}
+              className="flex-1 rounded-xl border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 active:bg-slate-100"
+            >
+              {t.home.pushLater}
+            </button>
+          </div>
+        </div>
+      )}
+      {pushBanner === "enabled" && (
+        <p className="mb-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          {t.home.pushEnabled}
+        </p>
+      )}
 
       <div className="mb-5 grid grid-cols-2 gap-3">
         {sequence.map((type) => {

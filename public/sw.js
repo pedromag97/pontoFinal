@@ -29,6 +29,39 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Lembretes push (ex.: esquecimento da saída).
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // payload não-JSON — usa defaults
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Registo de Ponto", {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/pointage" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/pointage";
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((list) => {
+        for (const client of list) {
+          if ("focus" in client) return client.focus();
+        }
+        return clients.openWindow(url);
+      })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;

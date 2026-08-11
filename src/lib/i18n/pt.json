@@ -24,6 +24,11 @@
     "dayComplete": "Dia completo ✅",
     "logout": "Sair",
     "todayList": "Registos de hoje",
+    "pushTitle": "Ativar lembretes?",
+    "pushBody": "Recebes uma notificação se te esqueceres de registar a volta do almoço ou a saída.",
+    "pushEnable": "Ativar",
+    "pushLater": "Agora não",
+    "pushEnabled": "Lembretes ativados ✅",
     "pendingBadge": "por enviar",
     "pendingNotice": "Tens registos por enviar — serão sincronizados automaticamente quando houver rede.",
     "flaggedNotice": "Registado com um aviso (GPS impreciso, relógio desacertado ou fora da obra). A gestão poderá verificar.",
@@ -105,9 +110,20 @@
   "nav": {
     "dashboard": "Resumo",
     "entries": "Registos",
+    "map": "Mapa",
     "employees": "Funcionários",
     "worksites": "Obras",
     "logout": "Sair"
+  },
+  "map": {
+    "title": "Mapa do dia",
+    "date": "Dia",
+    "show": "Ver",
+    "worksiteLegend": "Obra (círculo = raio)",
+    "flaggedLegend": "contorno vermelho = suspeito",
+    "noData": "Sem registos nem obras para mostrar neste dia.",
+    "entriesCount": "registos",
+    "openPhoto": "Ver foto"
   },
   "worksites": {
     "title": "Obras",

@@ -190,3 +190,16 @@ public/                         # manifest.json, sw.js, ícones, offline.html
   - `2026-08-11_obras_offline.sql`: tabela `worksites` (obras com raio
     geográfico) + colunas `worksite_id`/`synced_offline` + trigger com
     geofence e suporte a registos sincronizados offline.
+  - `2026-08-11_fuso_lisboa.sql`: fuso do cálculo do dia → Europe/Lisbon.
+  - `2026-08-11_lembretes.sql`: tabelas de push + agendamento pg_cron dos
+    lembretes (substituir `<CRON_SECRET>` antes de correr a parte 2).
+- **Lembretes push:** o funcionário ativa as notificações na app (banner 🔔).
+  Um cron no Supabase (pg_cron, 15 em 15 min) chama `/api/cron/reminders`,
+  que envia: "volta do almoço?" (2 h após a saída para almoço sem regresso) e
+  "regista a saída!" (9 h após a entrada sem saída) — máx. 1 de cada por dia,
+  apenas entre as 08h e as 22h de Lisboa. Requer as variáveis VAPID
+  (`npx web-push generate-vapid-keys`) na Vercel. No iPhone, as notificações
+  só funcionam com a app instalada no ecrã principal (iOS 16.4+).
+- **Mapa do dia:** página Mapa no painel — obras (círculo = raio) e registos
+  do dia escolhido, coloridos por tipo, com popup (nome, hora, foto).
+  Tiles do OpenStreetMap, sem chave de API.
