@@ -12,6 +12,8 @@ import {
 import type { EntryType, Profile, TimeEntryWithName } from "@/types";
 import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
 import MaintenanceToggle from "@/components/admin/MaintenanceToggle";
+import AddEntryForm from "@/components/admin/AddEntryForm";
+import EditTimeButton from "@/components/admin/EditTimeButton";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +146,8 @@ export default async function RegistosPage({
         </div>
       </form>
 
+      <AddEntryForm employees={(employees ?? []) as Profile[]} />
+
       <p className="mb-3 text-xs text-slate-400">{t.entries.timezoneNote}</p>
 
       <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
@@ -240,15 +244,19 @@ export default async function RegistosPage({
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
-                    <a
-                      href={mapsUrl(entry.latitude, entry.longitude)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono text-xs text-teal-700 underline"
-                      title={`${entry.latitude}, ${entry.longitude}`}
-                    >
-                      🗺 {t.entries.openMap}
-                    </a>
+                    {entry.latitude !== null && entry.longitude !== null ? (
+                      <a
+                        href={mapsUrl(entry.latitude, entry.longitude)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-xs text-teal-700 underline"
+                        title={`${entry.latitude}, ${entry.longitude}`}
+                      >
+                        🗺 {t.entries.openMap}
+                      </a>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-slate-600">
                     {entry.worksites?.name ?? "—"}
@@ -267,6 +275,16 @@ export default async function RegistosPage({
                       {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
                       {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
                       {outOfArea && <Badge>{t.entries.flagOutOfArea}</Badge>}
+                      {entry.manual && (
+                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                          {t.entries.flagManual}
+                        </span>
+                      )}
+                      {!!flags.manual_edit && (
+                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                          {t.entries.flagEdited}
+                        </span>
+                      )}
                       {entry.maintenance && (
                         <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
                           {t.entries.flagMaintenance}
@@ -277,7 +295,11 @@ export default async function RegistosPage({
                           📡 {t.entries.flagOffline}
                         </span>
                       )}
-                      {!suspicious && !offline && !entry.maintenance && (
+                      {!suspicious &&
+                        !offline &&
+                        !entry.maintenance &&
+                        !entry.manual &&
+                        !flags.manual_edit && (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                           {t.entries.ok}
                         </span>
@@ -286,6 +308,10 @@ export default async function RegistosPage({
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1.5">
+                      <EditTimeButton
+                        entryId={entry.id}
+                        currentTime={formatTime(entry.created_at)}
+                      />
                       <MaintenanceToggle
                         entryId={entry.id}
                         maintenance={entry.maintenance}

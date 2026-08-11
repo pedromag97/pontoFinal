@@ -207,6 +207,11 @@ public/                         # manifest.json, sw.js, ícones, offline.html
   - `2026-08-11_manutencao_registo.sql`: coluna `maintenance` em time_entries
     (manutenção atribuída ao registo no backoffice, não ao funcionário);
     remove a abordagem anterior.
+  - `2026-08-12_folha_presenca.sql`: tabela `sheet_settings` (sábados na
+    folha, por funcionário/mês).
+  - `2026-08-12_feriados_manual.sql`: feriados geridos no painel (pré-carga
+    PT 2026–2027), cache de geocodificação (coluna "Local" da folha) e
+    registos manuais / edição de hora pelo backoffice (auditados).
 - **Lembretes push:** o funcionário ativa as notificações na app (banner 🔔).
   Um cron no Supabase (pg_cron, 15 em 15 min) chama `/api/cron/reminders`,
   que envia: "volta do almoço?" (2 h após a saída para almoço sem regresso) e

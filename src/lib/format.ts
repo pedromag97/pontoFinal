@@ -95,6 +95,17 @@ export function workedHours(
   return Math.round(h * 100) / 100;
 }
 
+// Converte "YYYY-MM-DD" + "HH:MM" (hora de Lisboa) em ISO UTC.
+export function lisbonToUtcIso(dateStr: string, timeStr: string): string {
+  const guess = new Date(`${dateStr}T${timeStr}:00Z`);
+  const local = new Date(
+    guess.toLocaleString("en-US", { timeZone: WORKSITE_TZ })
+  );
+  const utc = new Date(guess.toLocaleString("en-US", { timeZone: "UTC" }));
+  const offsetMs = local.getTime() - utc.getTime();
+  return new Date(guess.getTime() - offsetMs).toISOString();
+}
+
 export function monthWorksite(): string {
   return todayWorksite().slice(0, 7); // YYYY-MM
 }

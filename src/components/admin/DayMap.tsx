@@ -64,7 +64,9 @@ export default function DayMap({
       }
 
       // Registos: círculos coloridos por tipo; contorno vermelho = suspeito.
+      // Registos manuais não têm GPS — não aparecem no mapa.
       for (const entry of entries) {
+        if (entry.latitude === null || entry.longitude === null) continue;
         const flags = entry.flags ?? {};
         const suspicious =
           !!flags.low_gps_accuracy ||

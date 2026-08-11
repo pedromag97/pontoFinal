@@ -44,8 +44,8 @@ create table public.time_entries (
   -- Preenchido pelo trigger com base no relógio do SERVIDOR — o cliente não manda.
   entry_date date not null default ((now() at time zone 'Europe/Lisbon')::date),
   photo_path text, -- caminho no bucket 'selfies'; fica null após purga de retenção
-  latitude double precision not null,
-  longitude double precision not null,
+  latitude double precision,  -- null apenas em registos manuais do backoffice
+  longitude double precision,
   gps_accuracy double precision, -- metros
   client_timestamp timestamptz,  -- hora reportada pelo telemóvel (só para comparação)
   created_at timestamptz not null default now(), -- hora OFICIAL (servidor)
@@ -56,6 +56,9 @@ create table public.time_entries (
   -- Marcado pelo backoffice: registo feito em trabalho de manutenção
   -- (grandes zonas) — a flag out_of_area deixa de contar como suspeita.
   maintenance boolean not null default false,
+  -- Criado manualmente pelo backoffice (funcionário esqueceu-se) — sem
+  -- foto/GPS, hora definida pelo admin, sinalizado para auditoria.
+  manual boolean not null default false,
   flags jsonb not null default '{}'::jsonb
 );
 
@@ -80,6 +83,49 @@ insert into public.lunch_schedule (weekday, lunch_required)
 values (0, false), (1, false), (2, false), (3, false),
        (4, false), (5, false), (6, false)
 on conflict (weekday) do nothing;
+
+-- Feriados (pré-carga: Portugal 2026–2027 — gerir na página Feriados).
+create table public.holidays (
+  holiday_date date primary key,
+  name text not null
+);
+
+insert into public.holidays (holiday_date, name) values
+  ('2026-01-01', 'Ano Novo'),
+  ('2026-04-03', 'Sexta-feira Santa'),
+  ('2026-04-05', 'Páscoa'),
+  ('2026-04-25', 'Dia da Liberdade'),
+  ('2026-05-01', 'Dia do Trabalhador'),
+  ('2026-06-04', 'Corpo de Deus'),
+  ('2026-06-10', 'Dia de Portugal'),
+  ('2026-08-15', 'Assunção de Nossa Senhora'),
+  ('2026-10-05', 'Implantação da República'),
+  ('2026-11-01', 'Todos os Santos'),
+  ('2026-12-01', 'Restauração da Independência'),
+  ('2026-12-08', 'Imaculada Conceição'),
+  ('2026-12-25', 'Natal'),
+  ('2027-01-01', 'Ano Novo'),
+  ('2027-03-26', 'Sexta-feira Santa'),
+  ('2027-03-28', 'Páscoa'),
+  ('2027-04-25', 'Dia da Liberdade'),
+  ('2027-05-01', 'Dia do Trabalhador'),
+  ('2027-05-27', 'Corpo de Deus'),
+  ('2027-06-10', 'Dia de Portugal'),
+  ('2027-08-15', 'Assunção de Nossa Senhora'),
+  ('2027-10-05', 'Implantação da República'),
+  ('2027-11-01', 'Todos os Santos'),
+  ('2027-12-01', 'Restauração da Independência'),
+  ('2027-12-08', 'Imaculada Conceição'),
+  ('2027-12-25', 'Natal')
+on conflict (holiday_date) do nothing;
+
+-- Cache de geocodificação (GPS → concelho) usada na folha de presença.
+-- Só o servidor lê/escreve (service role) — sem políticas.
+create table public.geocode_cache (
+  key text primary key,
+  locality text not null,
+  created_at timestamptz not null default now()
+);
 
 -- Subscrições de notificações push (lembretes; uma por dispositivo).
 create table public.push_subscriptions (
@@ -172,6 +218,24 @@ declare
   matched_id uuid;
   has_sites boolean;
 begin
+  new.manual := coalesce(new.manual, false);
+
+  -- Registo manual criado pelo backoffice (service role):
+  -- a hora é a definida pelo admin; fica sinalizado para auditoria.
+  if new.manual and auth.role() = 'service_role' then
+    new.created_at := coalesce(new.created_at, now());
+    new.entry_date := (new.created_at at time zone 'Europe/Lisbon')::date;
+    new.synced_offline := false;
+    new.flags := jsonb_build_object('manual', true);
+    return new;
+  end if;
+  new.manual := false;
+
+  -- Registos normais exigem GPS (a app garante; isto trava clientes forjados).
+  if new.latitude is null or new.longitude is null then
+    raise exception 'GPS obrigatório';
+  end if;
+
   new.created_at := now();
   new.synced_offline := coalesce(new.synced_offline, false);
 
@@ -228,6 +292,21 @@ alter table public.lunch_schedule enable row level security;
 alter table public.worksites enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.reminders_sent enable row level security;
+alter table public.holidays enable row level security;
+alter table public.geocode_cache enable row level security;
+
+-- holidays: todos leem; só admins gerem.
+create policy "holidays_select_all"
+  on public.holidays for select to authenticated using (true);
+create policy "holidays_insert_admin"
+  on public.holidays for insert to authenticated with check (public.is_admin());
+create policy "holidays_update_admin"
+  on public.holidays for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+create policy "holidays_delete_admin"
+  on public.holidays for delete to authenticated using (public.is_admin());
+
+-- geocode_cache: só service role — sem políticas.
 
 -- push_subscriptions: cada um gere as suas subscrições.
 create policy "push_own"

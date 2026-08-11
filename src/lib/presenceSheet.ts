@@ -5,8 +5,9 @@ import type { TimeEntry } from "@/types";
 
 // Folha de presença mensal em PDF (layout tipo "Registre de Présence"):
 // uma linha por dia do mês, blocos Manhã (entrada → saída almoço) e
-// Tarde (volta almoço → saída), coluna Ass. em branco para assinar em papel.
-// Horas arredondadas aos 15 minutos. Sábados só saem se include_saturdays.
+// Tarde (volta almoço → saída), e coluna "Local" com o concelho do
+// primeiro registo do dia. Horas arredondadas aos 15 minutos.
+// Sábados só saem se include_saturdays; feriados vêm da tabela holidays.
 
 interface SheetInput {
   employeeName: string;
@@ -14,6 +15,8 @@ interface SheetInput {
   worksiteName: string | null;
   entries: TimeEntry[];
   includeSaturdays: boolean;
+  holidaysByDay: Record<number, string>; // dia do mês → nome do feriado
+  localityByDay: Record<number, string>; // dia do mês → concelho
 }
 
 const WEEKDAY_LABELS = ["Dom", "2ª", "3ª", "4ª", "5ª", "6ª", "Sáb"];
@@ -41,55 +44,11 @@ function minutesToText(total: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-// Domingo de Páscoa (calendário gregoriano).
-function easterSunday(year: number): Date {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
-// Feriados de França (onde as obras estão), chave "MM-DD".
-function frenchHolidays(year: number): Map<string, string> {
-  const map = new Map<string, string>([
-    ["01-01", "Ano Novo"],
-    ["05-01", "Dia do Trabalhador"],
-    ["05-08", "Vitória de 1945"],
-    ["07-14", "Festa Nacional (França)"],
-    ["08-15", "Assunção"],
-    ["11-01", "Todos os Santos"],
-    ["11-11", "Armistício"],
-    ["12-25", "Natal"],
-  ]);
-  const easter = easterSunday(year);
-  const add = (offsetDays: number, name: string) => {
-    const date = new Date(easter.getTime() + offsetDays * 86400000);
-    const key = `${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
-    map.set(key, name);
-  };
-  add(1, "Segunda de Páscoa");
-  add(39, "Ascensão");
-  add(50, "Segunda de Pentecostes");
-  return map;
-}
-
 export async function buildPresenceSheet(
   input: SheetInput
 ): Promise<Uint8Array> {
   const [year, monthNumber] = input.month.split("-").map(Number);
   const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
-  const holidays = frenchHolidays(year);
 
   const byDay = new Map<number, TimeEntry[]>();
   for (const entry of input.entries) {
@@ -145,22 +104,22 @@ export async function buildPresenceSheet(
     { x: 40, y: 736, size: 10, font, color: black }
   );
 
-  // ---------- tabela ----------
+  // ---------- tabela (sem colunas Ass.) ----------
   const x0 = 40;
-  const widths = [30, 26, 58, 58, 40, 58, 58, 40, 147];
+  const widths = [30, 26, 62, 62, 62, 62, 211];
   const xs: number[] = [x0];
   for (const w of widths) xs.push(xs[xs.length - 1] + w);
   const tableRight = xs[xs.length - 1];
 
   const groupY = 712; // linha "MANHÃ / TARDE"
-  const headY = 696; // linha Entrada/Saída/Ass.
+  const headY = 696; // linha Entrada/Saída/Local
   const rowH = 15.6;
   const bodyTop = headY - 4;
 
-  drawCentered(page, "1º — MANHÃ", xs[2], widths[2] + widths[3] + widths[4], groupY + 3, 9, bold);
-  drawCentered(page, "2º — TARDE", xs[5], widths[5] + widths[6] + widths[7], groupY + 3, 9, bold);
+  drawCentered(page, "1º — MANHÃ", xs[2], widths[2] + widths[3], groupY + 3, 9, bold);
+  drawCentered(page, "2º — TARDE", xs[4], widths[4] + widths[5], groupY + 3, 9, bold);
 
-  const headers = ["Dia", "Data", "Entrada", "Saída", "Ass.", "Entrada", "Saída", "Ass.", "Observações"];
+  const headers = ["Dia", "Data", "Entrada", "Saída", "Entrada", "Saída", "Local"];
   headers.forEach((h, i) => {
     drawCentered(page, h, xs[i], widths[i], headY, 8, bold);
   });
@@ -192,8 +151,8 @@ export async function buildPresenceSheet(
     const voltaAlmoco = get("volta_almoco");
     const saida = get("saida");
 
-    const holidayKey = `${String(monthNumber).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const holiday = holidays.get(holidayKey);
+    const holiday = input.holidaysByDay[day];
+    const locality = input.localityByDay[day];
 
     const skipSaturday = isSaturday && !input.includeSaturdays;
     if (skipSaturday && dayEntries.length > 0) hiddenSaturdays = true;
@@ -208,8 +167,8 @@ export async function buildPresenceSheet(
 
       if (morningIn !== null) drawCentered(page, minutesToText(morningIn), xs[2], widths[2], textY, 8, font);
       if (morningOut !== null) drawCentered(page, minutesToText(morningOut), xs[3], widths[3], textY, 8, font);
-      if (afternoonIn !== null) drawCentered(page, minutesToText(afternoonIn), xs[5], widths[5], textY, 8, font);
-      if (afternoonOut !== null) drawCentered(page, minutesToText(afternoonOut), xs[6], widths[6], textY, 8, font);
+      if (afternoonIn !== null) drawCentered(page, minutesToText(afternoonIn), xs[4], widths[4], textY, 8, font);
+      if (afternoonOut !== null) drawCentered(page, minutesToText(afternoonOut), xs[5], widths[5], textY, 8, font);
 
       // total do dia a partir das horas impressas (coerência com a folha)
       if (morningIn !== null && afternoonOut !== null) {
@@ -219,15 +178,17 @@ export async function buildPresenceSheet(
           totalMinutes += afternoonOut - morningIn;
         }
       }
-      if (holiday) {
-        drawCentered(page, holiday, xs[8], widths[8], textY, 7, font, gray);
+
+      const localText = locality ?? "";
+      const suffix = holiday ? (localText ? `${localText} — ${holiday}` : holiday) : localText;
+      if (suffix) {
+        drawCentered(page, suffix.slice(0, 48), xs[6], widths[6], textY, 7, font);
       }
     } else if (holiday) {
-      ["---", "---", "---", "---"].forEach((dash, i) => {
-        const col = [2, 3, 5, 6][i];
-        drawCentered(page, dash, xs[col], widths[col], textY, 8, font, gray);
+      [2, 3, 4, 5].forEach((col) => {
+        drawCentered(page, "---", xs[col], widths[col], textY, 8, font, gray);
       });
-      drawCentered(page, holiday, xs[8], widths[8], textY, 7, font, gray);
+      drawCentered(page, holiday.slice(0, 48), xs[6], widths[6], textY, 7, font, gray);
     }
   }
 

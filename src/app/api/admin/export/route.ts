@@ -29,8 +29,8 @@ interface ExportRow {
   serverTime: string;
   clientTime: string;
   driftMin: number | "";
-  latitude: number;
-  longitude: number;
+  latitude: number | "";
+  longitude: number | "";
   accuracy: number | "";
   worksite: string;
   suspicious: string;
@@ -106,6 +106,8 @@ export async function GET(request: Request) {
       suspiciousParts.push("Fora da obra");
     }
     if (flags.offline_sync) suspiciousParts.push("Enviado offline");
+    if (entry.manual) suspiciousParts.push("Manual (backoffice)");
+    if (flags.manual_edit) suspiciousParts.push("Hora editada");
     return {
       name: entry.profiles?.full_name ?? "?",
       date: entry.entry_date,
@@ -115,8 +117,8 @@ export async function GET(request: Request) {
         ? formatTimeSeconds(entry.client_timestamp)
         : "",
       driftMin: drift ?? "",
-      latitude: entry.latitude,
-      longitude: entry.longitude,
+      latitude: entry.latitude ?? "",
+      longitude: entry.longitude ?? "",
       accuracy: entry.gps_accuracy !== null ? Math.round(entry.gps_accuracy) : "",
       worksite: entry.maintenance
         ? "Manutenção"
@@ -125,7 +127,10 @@ export async function GET(request: Request) {
       photoUrl: entry.photo_path
         ? (signedByPath.get(entry.photo_path) ?? "")
         : "",
-      mapUrl: mapsUrl(entry.latitude, entry.longitude),
+      mapUrl:
+        entry.latitude !== null && entry.longitude !== null
+          ? mapsUrl(entry.latitude, entry.longitude)
+          : "",
     };
   });
 

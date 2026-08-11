@@ -23,15 +23,21 @@ export interface TimeEntry {
   entry_type: EntryType;
   entry_date: string;
   photo_path: string | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null; // null apenas em registos manuais do backoffice
+  longitude: number | null;
   gps_accuracy: number | null;
   client_timestamp: string | null;
   created_at: string;
   worksite_id: string | null;
   synced_offline: boolean;
   maintenance: boolean;
+  manual: boolean;
   flags: Record<string, boolean>;
+}
+
+export interface Holiday {
+  holiday_date: string;
+  name: string;
 }
 
 export interface TimeEntryWithName extends TimeEntry {
