@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { formatDate, formatTime } from "@/lib/format";
@@ -9,7 +9,7 @@ import CameraCapture from "./CameraCapture";
 import ConsentScreen from "./ConsentScreen";
 import LogoutButton from "@/components/LogoutButton";
 
-const t = getDictionary("fr");
+const t = getDictionary("pt");
 
 type Step = "home" | "capture" | "preview" | "success";
 
@@ -23,10 +23,12 @@ export default function EmployeeHome({
   profile,
   initialEntries,
   today,
+  lunchRequired,
 }: {
   profile: Profile;
   initialEntries: TimeEntry[];
   today: string;
+  lunchRequired: boolean;
 }) {
   const [entries, setEntries] = useState<TimeEntry[]>(initialEntries);
   const [consentAt, setConsentAt] = useState(profile.consent_given_at);
@@ -43,8 +45,12 @@ export default function EmployeeHome({
   const [lastEntry, setLastEntry] = useState<TimeEntry | null>(null);
   const geoRequestId = useRef(0);
 
-  const entrada = entries.find((e) => e.entry_type === "entrada");
-  const saida = entries.find((e) => e.entry_type === "saida");
+  // Sequência do dia: com almoço obrigatório são 4 registos, senão 2.
+  const sequence: EntryType[] = lunchRequired
+    ? ["entrada", "saida_almoco", "volta_almoco", "saida"]
+    : ["entrada", "saida"];
+  const byType = new Map(entries.map((e) => [e.entry_type, e]));
+  const nextType = sequence.find((type) => !byType.has(type));
 
   const requestLocation = useCallback(() => {
     setGeoError(false);
@@ -145,11 +151,7 @@ export default function EmployeeHome({
   if (step === "capture") {
     return (
       <CameraCapture
-        title={
-          entryType === "entrada"
-            ? t.capture.titleArrival
-            : t.capture.titleDeparture
-        }
+        title={t.capture.titles[entryType]}
         onCapture={onPhotoCaptured}
         onCancel={() => setStep("home")}
       />
@@ -176,7 +178,7 @@ export default function EmployeeHome({
             <span className="text-slate-500">{t.preview.time}</span>
             <span className="font-semibold">
               {captureTime
-                ? captureTime.toLocaleTimeString("fr-FR", {
+                ? captureTime.toLocaleTimeString("pt-PT", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })
@@ -260,9 +262,7 @@ export default function EmployeeHome({
           ✅
         </div>
         <h1 className="mb-1 text-2xl font-bold">
-          {lastEntry.entry_type === "entrada"
-            ? t.success.arrival
-            : t.success.departure}{" "}
+          {t.success.registered[lastEntry.entry_type]}{" "}
           {formatTime(lastEntry.created_at)}
         </h1>
         {flagged && (
@@ -288,37 +288,29 @@ export default function EmployeeHome({
           <p className="text-sm text-slate-500">{t.home.hello},</p>
           <h1 className="text-2xl font-bold">{profile.full_name}</h1>
           <p className="mt-1 text-sm capitalize text-slate-500">
-            {formatDate(today, "fr-FR")}
+            {formatDate(today, "pt-PT")}
           </p>
         </div>
         <LogoutButton label={t.home.logout} />
       </header>
 
       <div className="mb-8 grid grid-cols-2 gap-3">
-        <StatusCard
-          label={t.home.arrival}
-          entry={entrada}
-          emptyLabel={t.home.notYet}
-        />
-        <StatusCard
-          label={t.home.departure}
-          entry={saida}
-          emptyLabel={t.home.notYet}
-        />
+        {sequence.map((type) => (
+          <StatusCard
+            key={type}
+            label={t.types[type]}
+            entry={byType.get(type)}
+            emptyLabel={t.home.notYet}
+          />
+        ))}
       </div>
 
       <div className="flex flex-1 flex-col justify-center pb-10">
-        {!entrada ? (
+        {nextType ? (
           <BigButton
-            label={t.home.pointArrival}
-            emoji="🌅"
-            onClick={() => startFlow("entrada")}
-          />
-        ) : !saida ? (
-          <BigButton
-            label={t.home.pointDeparture}
-            emoji="🌇"
-            onClick={() => startFlow("saida")}
+            label={t.home.actions[nextType]}
+            emoji={t.home.actionEmojis[nextType]}
+            onClick={() => startFlow(nextType)}
           />
         ) : (
           <p className="rounded-2xl bg-emerald-50 py-6 text-center text-xl font-bold text-emerald-700">

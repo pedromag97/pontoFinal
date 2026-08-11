@@ -9,11 +9,18 @@ import {
   monthWorksite,
   todayWorksite,
 } from "@/lib/format";
-import type { Profile, TimeEntryWithName } from "@/types";
+import type { EntryType, Profile, TimeEntryWithName } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 const t = getDictionary("pt");
+
+const TYPE_STYLE: Record<EntryType, string> = {
+  entrada: "bg-sky-100 text-sky-800",
+  saida_almoco: "bg-amber-100 text-amber-800",
+  volta_almoco: "bg-lime-100 text-lime-800",
+  saida: "bg-violet-100 text-violet-800",
+};
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -206,15 +213,9 @@ export default async function RegistosPage({
                   </td>
                   <td className="px-3 py-2">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        entry.entry_type === "entrada"
-                          ? "bg-sky-100 text-sky-800"
-                          : "bg-violet-100 text-violet-800"
-                      }`}
+                      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_STYLE[entry.entry_type]}`}
                     >
-                      {entry.entry_type === "entrada"
-                        ? t.entries.entrada
-                        : t.entries.saida}
+                      {t.types[entry.entry_type]}
                     </span>
                   </td>
                   <td className="px-3 py-2 font-semibold whitespace-nowrap">

@@ -1,8 +1,8 @@
 {
-  "name": "Pointage Chantier",
-  "short_name": "Pointage",
-  "description": "Feuille de pointage quotidienne avec selfie et localisation GPS",
-  "lang": "fr",
+  "name": "Registo de Ponto",
+  "short_name": "Ponto",
+  "description": "Folha de ponto diária com selfie e localização GPS",
+  "lang": "pt",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

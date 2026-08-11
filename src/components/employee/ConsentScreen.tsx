@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import LogoutButton from "@/components/LogoutButton";
 
-const t = getDictionary("fr");
+const t = getDictionary("pt");
 
 // Ecrã de consentimento RGPD apresentado no primeiro login.
 // O aceite fica registado em profiles.consent_given_at.

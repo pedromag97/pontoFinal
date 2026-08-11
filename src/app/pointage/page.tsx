@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n";
-import { todayWorksite } from "@/lib/format";
+import { todayWorksite, weekdayWorksite } from "@/lib/format";
 import type { TimeEntry } from "@/types";
 import EmployeeHome from "@/components/employee/EmployeeHome";
 import LogoutButton from "@/components/LogoutButton";
@@ -15,7 +15,7 @@ export default async function PointagePage() {
   const { supabase, profile } = session;
   if (profile.role === "admin") redirect("/admin");
 
-  const t = getDictionary("fr");
+  const t = getDictionary("pt");
 
   if (!profile.active) {
     return (
@@ -38,11 +38,19 @@ export default async function PointagePage() {
     .eq("entry_date", today)
     .order("created_at");
 
+  // Hoje tem pausa de almoço obrigatória? (config do admin, por dia da semana)
+  const { data: schedule } = await supabase
+    .from("lunch_schedule")
+    .select("lunch_required")
+    .eq("weekday", weekdayWorksite())
+    .maybeSingle();
+
   return (
     <EmployeeHome
       profile={profile}
       initialEntries={(entries ?? []) as TimeEntry[]}
       today={today}
+      lunchRequired={schedule?.lunch_required ?? false}
     />
   );
 }

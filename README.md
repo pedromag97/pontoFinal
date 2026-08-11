@@ -1,12 +1,15 @@
 # Ponto Final — Folha de ponto com selfie + GPS
 
 PWA de registo de presença para funcionários de obra (redes de fibra ótica em
-França), com painel de gestão em Portugal.
+França), com painel de gestão em Portugal. **Toda a app está em português**
+(a estrutura i18n em `src/lib/i18n/` permite reativar o francês mais tarde).
 
-- **App do funcionário (francês):** login → selfie pela câmara frontal →
-  carimbo automático de GPS + data/hora → confirmação. Entrada e saída por dia.
-- **Painel de gestão (português):** funcionários, registos com foto/mapa/flags
-  de fraude, exportação CSV/Excel, resumo mensal, retenção RGPD.
+- **App do funcionário:** login → selfie pela câmara frontal → carimbo
+  automático de GPS + data/hora → confirmação. Entrada e saída por dia; nos
+  dias configurados pelo admin, também saída e volta do almoço (4 registos).
+- **Painel de gestão:** funcionários, registos com foto/mapa/flags de fraude,
+  horário de almoço por dia da semana, exportação CSV/Excel com horas
+  trabalhadas (almoço descontado), resumo mensal, retenção RGPD.
 
 **Stack:** Next.js (App Router, TypeScript) · Supabase (Auth + Postgres + Storage) ·
 Tailwind CSS · PWA · deploy Vercel.
@@ -95,7 +98,8 @@ standalone, com ícone próprio.
 | Hora oficial no servidor | Trigger `prepare_time_entry` força `created_at = now()` e `entry_date` (Europe/Paris) na base de dados — o cliente não consegue forjar. |
 | Hora do telemóvel guardada | `client_timestamp`; desvio > 5 min ⇒ flag `clock_drift`. |
 | Precisão GPS | `gps_accuracy` guardada; > 100 m ⇒ flag `low_gps_accuracy`. |
-| 1 entrada + 1 saída por dia | Índice único `(employee_id, entry_type, entry_date)` na BD. |
+| 1 registo de cada tipo por dia | Índice único `(employee_id, entry_type, entry_date)` na BD. Tipos: entrada, saída almoço, volta almoço, saída. |
+| Almoço por dia da semana | Tabela `lunch_schedule` (editável no Resumo do painel). Nos dias marcados, a app do funcionário pede os 4 registos; as horas exportadas descontam o intervalo. |
 | Captura direta | `getUserMedia` com `facingMode: 'user'` (a foto é tirada dentro da app); fallback `<input capture="user">` só se a câmara falhar. |
 | Fotos privadas | Bucket não-público; acesso só por signed URLs com expiração (1 h no painel, 7 dias nos exports). |
 | Registos imutáveis | Sem política RLS de UPDATE em `time_entries`. |
@@ -173,3 +177,8 @@ public/                         # manifest.json, sw.js, ícones, offline.html
   funcionários usam o username, admins podem usar o email real.
   Se a base de dados foi criada antes desta funcionalidade, corre
   `supabase/migrations/2026-08-10_username_login.sql`.
+- **Migrações:** os ficheiros em `supabase/migrations/` são para bases de dados
+  já criadas com versões antigas do `schema.sql` — corre-os por ordem de data
+  no SQL Editor. Instalações novas só precisam do `schema.sql`.
+  - `2026-08-11_almoco.sql`: tipos de registo de almoço + tabela
+    `lunch_schedule` (horário de almoço por dia da semana).

@@ -4,16 +4,23 @@ import { requireAdmin } from "@/lib/auth";
 import {
   clockDriftMinutes,
   formatTimeSeconds,
-  hoursBetween,
   mapsUrl,
   monthWorksite,
   todayWorksite,
+  workedHours,
 } from "@/lib/format";
-import type { TimeEntryWithName } from "@/types";
+import type { EntryType, TimeEntryWithName } from "@/types";
 
 export const runtime = "nodejs";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const TYPE_LABEL: Record<EntryType, string> = {
+  entrada: "Entrada",
+  saida_almoco: "Saída almoço",
+  volta_almoco: "Volta almoço",
+  saida: "Saída",
+};
 
 interface ExportRow {
   name: string;
@@ -34,6 +41,8 @@ interface SummaryRow {
   name: string;
   date: string;
   entrada: string;
+  saidaAlmoco: string;
+  voltaAlmoco: string;
   saida: string;
   hours: number | "";
 }
@@ -95,7 +104,7 @@ export async function GET(request: Request) {
     return {
       name: entry.profiles?.full_name ?? "?",
       date: entry.entry_date,
-      type: entry.entry_type,
+      type: TYPE_LABEL[entry.entry_type],
       serverTime: formatTimeSeconds(entry.created_at),
       clientTime: entry.client_timestamp
         ? formatTimeSeconds(entry.client_timestamp)
@@ -112,31 +121,37 @@ export async function GET(request: Request) {
     };
   });
 
-  // Resumo por funcionário/dia com horas entrada→saída.
-  const byKey = new Map<string, { name: string; date: string; entrada?: TimeEntryWithName; saida?: TimeEntryWithName }>();
+  // Resumo por funcionário/dia com horas trabalhadas (desconta o almoço
+  // quando a saída/volta do almoço estão registadas).
+  const byKey = new Map<
+    string,
+    { name: string; date: string; dayEntries: TimeEntryWithName[] }
+  >();
   for (const entry of entries) {
     const key = `${entry.employee_id}|${entry.entry_date}`;
     if (!byKey.has(key)) {
       byKey.set(key, {
         name: entry.profiles?.full_name ?? "?",
         date: entry.entry_date,
+        dayEntries: [],
       });
     }
-    const day = byKey.get(key)!;
-    if (entry.entry_type === "entrada") day.entrada = entry;
-    else day.saida = entry;
+    byKey.get(key)!.dayEntries.push(entry);
   }
+  const timeOf = (day: TimeEntryWithName[], type: EntryType) => {
+    const found = day.find((e) => e.entry_type === type);
+    return found ? formatTimeSeconds(found.created_at) : "";
+  };
   const summary: SummaryRow[] = [...byKey.values()]
     .sort((a, b) => a.name.localeCompare(b.name) || a.date.localeCompare(b.date))
     .map((day) => ({
       name: day.name,
       date: day.date,
-      entrada: day.entrada ? formatTimeSeconds(day.entrada.created_at) : "",
-      saida: day.saida ? formatTimeSeconds(day.saida.created_at) : "",
-      hours:
-        day.entrada && day.saida
-          ? hoursBetween(day.entrada.created_at, day.saida.created_at)
-          : "",
+      entrada: timeOf(day.dayEntries, "entrada"),
+      saidaAlmoco: timeOf(day.dayEntries, "saida_almoco"),
+      voltaAlmoco: timeOf(day.dayEntries, "volta_almoco"),
+      saida: timeOf(day.dayEntries, "saida"),
+      hours: workedHours(day.dayEntries) ?? "",
     }));
 
   const filename = `registos_${from}_${to}`;
@@ -222,6 +237,8 @@ export async function GET(request: Request) {
     { header: "Funcionário", key: "name", width: 24 },
     { header: "Data", key: "date", width: 12 },
     { header: "Entrada", key: "entrada", width: 12 },
+    { header: "Saída almoço", key: "saidaAlmoco", width: 13 },
+    { header: "Volta almoço", key: "voltaAlmoco", width: 13 },
     { header: "Saída", key: "saida", width: 12 },
     { header: "Horas", key: "hours", width: 10 },
   ];

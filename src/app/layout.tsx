@@ -3,9 +3,8 @@ import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
-  title: "Pointage Chantier",
-  description:
-    "Feuille de pointage quotidienne avec selfie et localisation GPS",
+  title: "Registo de Ponto",
+  description: "Folha de ponto diária com selfie e localização GPS",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon-192.png",
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "Pointage",
+    title: "Ponto",
     statusBarStyle: "default",
   },
 };
@@ -32,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
+    <html lang="pt">
       <body>
         {children}
         <ServiceWorkerRegister />

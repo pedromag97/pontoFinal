@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { loginToEmail } from "@/lib/username";
 
-const t = getDictionary("fr");
+const t = getDictionary("pt");
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

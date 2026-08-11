@@ -2,6 +2,102 @@
   "app": {
     "name": "Ponto Final — Gestão"
   },
+  "types": {
+    "entrada": "Entrada",
+    "saida_almoco": "Saída almoço",
+    "volta_almoco": "Volta almoço",
+    "saida": "Saída"
+  },
+  "login": {
+    "title": "Registo de Ponto",
+    "subtitle": "Entra com a conta fornecida pela empresa",
+    "email": "Utilizador",
+    "emailHint": "O teu utilizador (ex.: joao.silva) ou email",
+    "password": "Password",
+    "submit": "Entrar",
+    "loading": "A entrar…",
+    "error": "Utilizador ou password incorretos."
+  },
+  "home": {
+    "hello": "Olá",
+    "notYet": "—",
+    "dayComplete": "Dia completo ✅",
+    "logout": "Sair",
+    "flaggedNotice": "Registado com um aviso (GPS impreciso ou relógio desacertado). A gestão poderá verificar.",
+    "actions": {
+      "entrada": "Registar entrada",
+      "saida_almoco": "Saída para almoço",
+      "volta_almoco": "Regresso do almoço",
+      "saida": "Registar saída"
+    },
+    "actionEmojis": {
+      "entrada": "🌅",
+      "saida_almoco": "🍽️",
+      "volta_almoco": "🔨",
+      "saida": "🌇"
+    }
+  },
+  "inactive": {
+    "title": "Conta desativada",
+    "body": "A tua conta foi desativada. Fala com o teu responsável."
+  },
+  "consent": {
+    "title": "Consentimento — dados pessoais",
+    "intro": "Para registar a tua presença na obra, esta aplicação recolhe:",
+    "item_photo": "uma fotografia (selfie) tirada no momento do registo;",
+    "item_gps": "a tua posição GPS e a respetiva precisão no momento do registo;",
+    "item_time": "a data e a hora do registo.",
+    "purpose": "Estes dados servem apenas para comprovar a presença no local de trabalho e preparar os salários. São visíveis por ti e pela gestão.",
+    "retention": "As fotografias são apagadas automaticamente ao fim de 6 meses. Os horários (sem foto) são conservados para os salários.",
+    "rights": "Podes a qualquer momento pedir acesso aos teus dados ou a sua eliminação junto do teu empregador (RGPD).",
+    "accept": "Aceito",
+    "refuse": "Não aceito",
+    "refusedTitle": "Consentimento recusado",
+    "refusedBody": "Sem consentimento, a aplicação não pode ser usada para o registo de ponto. Fala com o teu responsável para uma alternativa."
+  },
+  "capture": {
+    "titles": {
+      "entrada": "Selfie — entrada",
+      "saida_almoco": "Selfie — saída almoço",
+      "volta_almoco": "Selfie — volta almoço",
+      "saida": "Selfie — saída"
+    },
+    "instructions": "Coloca a cara dentro do quadro e carrega no botão.",
+    "take": "Tirar fotografia",
+    "cancel": "Cancelar",
+    "cameraError": "Não foi possível abrir a câmara. Usa o botão abaixo.",
+    "fallbackButton": "Tirar selfie com a câmara",
+    "gettingLocation": "A obter a tua posição GPS…"
+  },
+  "preview": {
+    "title": "Confirma antes de enviar",
+    "time": "Hora",
+    "location": "Posição",
+    "accuracy": "Precisão",
+    "meters": "m",
+    "locationPending": "A obter posição GPS…",
+    "locationError": "Posição GPS indisponível. O registo exige GPS — ativa a localização e tenta de novo.",
+    "lowAccuracy": "Precisão GPS fraca (> 100 m). Se possível, vai para uma zona mais aberta.",
+    "retryLocation": "Tentar localização de novo",
+    "confirm": "Confirmar registo",
+    "retake": "Repetir fotografia",
+    "sending": "A enviar…"
+  },
+  "success": {
+    "registered": {
+      "entrada": "Entrada registada às",
+      "saida_almoco": "Saída para almoço registada às",
+      "volta_almoco": "Regresso registado às",
+      "saida": "Saída registada às"
+    },
+    "back": "Voltar ao início"
+  },
+  "errors": {
+    "duplicate": "Este registo já foi feito hoje.",
+    "network": "Erro de rede. Verifica a ligação e tenta de novo.",
+    "upload": "Falha no envio da fotografia. Tenta de novo.",
+    "generic": "Ocorreu um erro. Tenta de novo."
+  },
   "nav": {
     "dashboard": "Resumo",
     "entries": "Registos",
@@ -13,9 +109,14 @@
     "month": "Mês",
     "employee": "Funcionário",
     "daysPresent": "Dias registados",
-    "totalHours": "Horas (entrada→saída)",
+    "totalHours": "Horas trabalhadas",
     "flagged": "Registos suspeitos",
     "noData": "Sem registos neste mês.",
+    "scheduleTitle": "Horário de almoço",
+    "scheduleBody": "Nos dias marcados, os funcionários têm de registar também a saída para almoço e o regresso (4 registos/dia). Nos restantes, só entrada e saída.",
+    "scheduleSaved": "Guardado.",
+    "scheduleError": "Erro ao guardar — corre a migração da base de dados (ver README).",
+    "weekdays": ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"],
     "retentionTitle": "Retenção de fotos (RGPD)",
     "retentionBody": "As fotos com mais de 6 meses podem ser apagadas manualmente aqui, ou automaticamente via cron da Vercel (ver README).",
     "retentionButton": "Apagar fotos com mais de 6 meses",
@@ -46,8 +147,6 @@
     "flagPhotoPurged": "Foto apagada (retenção)",
     "noPhoto": "—",
     "openMap": "Ver mapa",
-    "entrada": "Entrada",
-    "saida": "Saída",
     "noData": "Sem registos para os filtros escolhidos.",
     "timezoneNote": "Todas as horas em hora de França (Europe/Paris)."
   },
@@ -81,9 +180,5 @@
     "consentYes": "Dado em",
     "consentNo": "Por dar",
     "error": "Ocorreu um erro. Tenta novamente."
-  },
-  "login": {
-    "title": "Ponto Final",
-    "subtitle": "Acesso de gestão e funcionários"
   }
 }

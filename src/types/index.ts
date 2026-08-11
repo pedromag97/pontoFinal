@@ -1,5 +1,10 @@
 export type Role = "employee" | "admin";
-export type EntryType = "entrada" | "saida";
+export type EntryType = "entrada" | "saida_almoco" | "volta_almoco" | "saida";
+
+export interface LunchScheduleDay {
+  weekday: number; // 0 = domingo … 6 = sábado
+  lunch_required: boolean;
+}
 
 export interface Profile {
   id: string;

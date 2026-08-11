@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getDictionary } from "@/lib/i18n";
 
-const t = getDictionary("fr");
+const t = getDictionary("pt");
 
 // Captura direta pela câmara frontal via getUserMedia. Se o browser recusar
 // (permissão negada / hardware), cai para <input capture="user">.

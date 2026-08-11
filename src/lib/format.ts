@@ -59,10 +59,38 @@ export function clockDriftMinutes(
   return Math.round(drift * 10) / 10;
 }
 
-// Horas trabalhadas entre entrada e saída (decimal, 2 casas).
+// Horas trabalhadas entre dois instantes (decimal, 2 casas).
 export function hoursBetween(entradaIso: string, saidaIso: string): number {
   const h =
     (new Date(saidaIso).getTime() - new Date(entradaIso).getTime()) / 3600000;
+  return Math.round(h * 100) / 100;
+}
+
+// Dia da semana no fuso da obra: 0 = domingo … 6 = sábado.
+export function weekdayWorksite(): number {
+  const short = new Intl.DateTimeFormat("en-US", {
+    timeZone: WORKSITE_TZ,
+    weekday: "short",
+  }).format(new Date());
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(short);
+}
+
+// Horas trabalhadas num dia. Com pausa de almoço registada, desconta-a:
+// (saída almoço − entrada) + (saída − volta almoço); senão, saída − entrada.
+export function workedHours(
+  day: { entry_type: string; created_at: string }[]
+): number | null {
+  const get = (t: string) => day.find((e) => e.entry_type === t);
+  const entrada = get("entrada");
+  const saida = get("saida");
+  if (!entrada || !saida) return null;
+  const saidaAlmoco = get("saida_almoco");
+  const voltaAlmoco = get("volta_almoco");
+  const h =
+    saidaAlmoco && voltaAlmoco
+      ? hoursBetween(entrada.created_at, saidaAlmoco.created_at) +
+        hoursBetween(voltaAlmoco.created_at, saida.created_at)
+      : hoursBetween(entrada.created_at, saida.created_at);
   return Math.round(h * 100) / 100;
 }
 

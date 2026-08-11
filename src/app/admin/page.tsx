@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
-import { hoursBetween, monthBounds, monthWorksite } from "@/lib/format";
-import type { TimeEntryWithName } from "@/types";
+import { monthBounds, monthWorksite, workedHours } from "@/lib/format";
+import type { LunchScheduleDay, TimeEntryWithName } from "@/types";
 import RetentionButton from "@/components/admin/RetentionButton";
+import LunchScheduleEditor from "@/components/admin/LunchScheduleEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,11 @@ export default async function AdminDashboard({
 
   const entries = (data ?? []) as TimeEntryWithName[];
 
+  const { data: scheduleDays } = await supabase
+    .from("lunch_schedule")
+    .select("*")
+    .order("weekday");
+
   // Agrupar por funcionário: dias com entrada, horas entrada→saída, suspeitos.
   const byEmployee = new Map<string, { name: string; byDay: Map<string, TimeEntryWithName[]>; flagged: number }>();
   for (const entry of entries) {
@@ -61,12 +67,8 @@ export default async function AdminDashboard({
       let days = 0;
       let hours = 0;
       for (const dayEntries of emp.byDay.values()) {
-        const entrada = dayEntries.find((e) => e.entry_type === "entrada");
-        const saida = dayEntries.find((e) => e.entry_type === "saida");
-        if (entrada) days += 1;
-        if (entrada && saida) {
-          hours += hoursBetween(entrada.created_at, saida.created_at);
-        }
+        if (dayEntries.some((e) => e.entry_type === "entrada")) days += 1;
+        hours += workedHours(dayEntries) ?? 0;
       }
       return { name: emp.name, days, hours: Math.round(hours * 100) / 100, flagged: emp.flagged };
     })
@@ -143,6 +145,14 @@ export default async function AdminDashboard({
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-1 font-semibold">🍽️ {t.dashboard.scheduleTitle}</h2>
+        <p className="mb-4 text-sm text-slate-500">{t.dashboard.scheduleBody}</p>
+        <LunchScheduleEditor
+          initialDays={(scheduleDays as LunchScheduleDay[] | null) ?? null}
+        />
       </div>
 
       <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">

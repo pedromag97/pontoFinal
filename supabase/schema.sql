@@ -26,7 +26,8 @@ comment on table public.profiles is 'Perfil de cada utilizador (funcionário ou 
 create table public.time_entries (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid not null references public.profiles (id) on delete cascade,
-  entry_type text not null check (entry_type in ('entrada', 'saida')),
+  entry_type text not null
+    check (entry_type in ('entrada', 'saida_almoco', 'volta_almoco', 'saida')),
   -- Dia do registo em hora de França (onde o funcionário trabalha).
   -- Preenchido pelo trigger com base no relógio do SERVIDOR — o cliente não manda.
   entry_date date not null default ((now() at time zone 'Europe/Paris')::date),
@@ -47,6 +48,19 @@ create unique index time_entries_one_per_day
 
 create index time_entries_date_idx on public.time_entries (entry_date);
 create index time_entries_employee_idx on public.time_entries (employee_id, entry_date);
+
+-- Configuração do horário de almoço por dia da semana (0 = domingo … 6 = sábado).
+-- Nos dias com lunch_required, o funcionário faz 4 registos
+-- (entrada, saída almoço, volta almoço, saída); nos restantes, 2.
+create table public.lunch_schedule (
+  weekday int primary key check (weekday between 0 and 6),
+  lunch_required boolean not null default false
+);
+
+insert into public.lunch_schedule (weekday, lunch_required)
+values (0, false), (1, false), (2, false), (3, false),
+       (4, false), (5, false), (6, false)
+on conflict (weekday) do nothing;
 
 -- ------------------------------------------------------------
 -- 2. FUNÇÕES E TRIGGERS
@@ -126,6 +140,18 @@ create trigger time_entries_prepare
 
 alter table public.profiles enable row level security;
 alter table public.time_entries enable row level security;
+alter table public.lunch_schedule enable row level security;
+
+-- lunch_schedule: todos leem (a app do funcionário precisa de saber o horário);
+-- só admins alteram. Linhas fixas (7) — sem insert/delete.
+create policy "lunch_select_all"
+  on public.lunch_schedule for select to authenticated
+  using (true);
+
+create policy "lunch_update_admin"
+  on public.lunch_schedule for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- profiles: cada um vê o seu; admins veem todos.
 create policy "profiles_select_own_or_admin"
