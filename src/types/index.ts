@@ -30,6 +30,8 @@ export interface TimeEntry {
   created_at: string;
   worksite_id: string | null;
   synced_offline: boolean;
+  validated_at: string | null;
+  validated_by: string | null;
   maintenance: boolean;
   manual: boolean;
   flags: Record<string, boolean>;

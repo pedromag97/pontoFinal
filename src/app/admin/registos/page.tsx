@@ -14,6 +14,8 @@ import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
 import MaintenanceToggle from "@/components/admin/MaintenanceToggle";
 import AddEntryForm from "@/components/admin/AddEntryForm";
 import EditTimeButton from "@/components/admin/EditTimeButton";
+import ValidateToggle from "@/components/admin/ValidateToggle";
+import BulkValidateButton from "@/components/admin/BulkValidateButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +33,12 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export default async function RegistosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; employee?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    employee?: string;
+    status?: string;
+  }>;
 }) {
   const params = await searchParams;
   const from = DATE_RE.test(params.from ?? "")
@@ -39,6 +46,10 @@ export default async function RegistosPage({
     : `${monthWorksite()}-01`;
   const to = DATE_RE.test(params.to ?? "") ? params.to! : todayWorksite();
   const employee = params.employee ?? "";
+  const status =
+    params.status === "pending" || params.status === "validated"
+      ? params.status
+      : "";
 
   const supabase = await createClient();
 
@@ -56,6 +67,8 @@ export default async function RegistosPage({
     .order("created_at", { ascending: false })
     .limit(500);
   if (employee) query = query.eq("employee_id", employee);
+  if (status === "pending") query = query.is("validated_at", null);
+  if (status === "validated") query = query.not("validated_at", "is", null);
 
   const { data } = await query;
   const entries = (data ?? []) as TimeEntryWithName[];
@@ -124,6 +137,20 @@ export default async function RegistosPage({
             ))}
           </select>
         </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">
+            {t.entries.filterValidation}
+          </label>
+          <select
+            name="status"
+            defaultValue={status}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">{t.entries.filterAll}</option>
+            <option value="pending">{t.entries.filterPending}</option>
+            <option value="validated">{t.entries.filterValidated}</option>
+          </select>
+        </div>
         <button
           type="submit"
           className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
@@ -148,7 +175,10 @@ export default async function RegistosPage({
 
       <AddEntryForm employees={(employees ?? []) as Profile[]} />
 
-      <p className="mb-3 text-xs text-slate-400">{t.entries.timezoneNote}</p>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <BulkValidateButton from={from} to={to} employee={employee} />
+        <p className="text-xs text-slate-400">{t.entries.timezoneNote}</p>
+      </div>
 
       <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
         <table className="w-full text-sm">
@@ -164,13 +194,14 @@ export default async function RegistosPage({
               <th className="px-3 py-3">{t.entries.worksite}</th>
               <th className="px-3 py-3">{t.entries.accuracy}</th>
               <th className="px-3 py-3">{t.entries.status}</th>
+              <th className="px-3 py-3">{t.entries.validation}</th>
               <th className="px-3 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {entries.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
                   {t.entries.noData}
                 </td>
               </tr>
@@ -305,6 +336,12 @@ export default async function RegistosPage({
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-3 py-2">
+                    <ValidateToggle
+                      entryId={entry.id}
+                      validated={entry.validated_at !== null}
+                    />
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1.5">

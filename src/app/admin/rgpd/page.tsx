@@ -38,7 +38,7 @@ export default function RgpdPage() {
           </li>
           <li>
             <b>Retenção automática:</b> além do botão acima, um cron mensal
-            (dia 1) apaga as fotos com mais de 6 meses — os registos de
+            (dia 1) apaga as fotos com mais de 3 meses — os registos de
             horas/GPS mantêm-se para os salários.
           </li>
         </ul>

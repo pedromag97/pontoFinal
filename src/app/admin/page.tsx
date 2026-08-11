@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
 import { monthBounds, monthWorksite, workedHours } from "@/lib/format";
 import type { TimeEntryWithName } from "@/types";
+import { isSuspicious } from "@/lib/entries";
 import SaturdayToggle from "@/components/admin/SaturdayToggle";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ interface Row {
   days: number;
   hours: number;
   flagged: number;
+  pending: number;
   includeSaturdays: boolean;
 }
 
@@ -57,7 +59,15 @@ export default async function AdminDashboard({
   );
 
   // Agrupar por funcionário: dias com entrada, horas entrada→saída, suspeitos.
-  const byEmployee = new Map<string, { name: string; byDay: Map<string, TimeEntryWithName[]>; flagged: number }>();
+  const byEmployee = new Map<
+    string,
+    {
+      name: string;
+      byDay: Map<string, TimeEntryWithName[]>;
+      flagged: number;
+      pending: number;
+    }
+  >();
   for (const entry of entries) {
     const key = entry.employee_id;
     if (!byEmployee.has(key)) {
@@ -65,16 +75,14 @@ export default async function AdminDashboard({
         name: entry.profiles?.full_name ?? "?",
         byDay: new Map(),
         flagged: 0,
+        pending: 0,
       });
     }
     const emp = byEmployee.get(key)!;
     if (!emp.byDay.has(entry.entry_date)) emp.byDay.set(entry.entry_date, []);
     emp.byDay.get(entry.entry_date)!.push(entry);
-    const flags = entry.flags ?? {};
-    const outOfArea = flags.out_of_area && !entry.maintenance;
-    if (flags.low_gps_accuracy || flags.clock_drift || outOfArea) {
-      emp.flagged += 1;
-    }
+    if (isSuspicious(entry)) emp.flagged += 1;
+    if (entry.validated_at === null) emp.pending += 1;
   }
 
   // Todos os funcionários aparecem (mesmo sem registos no mês) — a folha
@@ -96,6 +104,7 @@ export default async function AdminDashboard({
         days,
         hours: Math.round(hours * 100) / 100,
         flagged: stats?.flagged ?? 0,
+        pending: stats?.pending ?? 0,
         includeSaturdays: saturdaysByEmployee.get(emp.id) ?? false,
       };
     })
@@ -142,6 +151,9 @@ export default async function AdminDashboard({
               <th className="px-4 py-3 text-right">{t.dashboard.daysPresent}</th>
               <th className="px-4 py-3 text-right">{t.dashboard.totalHours}</th>
               <th className="px-4 py-3 text-right">{t.dashboard.flagged}</th>
+              <th className="px-4 py-3 text-right">
+                {t.dashboard.pendingValidation}
+              </th>
               <th className="px-4 py-3 text-center">{t.dashboard.saturdays}</th>
               <th className="px-4 py-3 text-center">{t.dashboard.sheet}</th>
             </tr>
@@ -149,7 +161,7 @@ export default async function AdminDashboard({
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                   {t.dashboard.noData}
                 </td>
               </tr>
@@ -168,6 +180,23 @@ export default async function AdminDashboard({
                     </span>
                   ) : (
                     <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {row.pending > 0 ? (
+                    <Link
+                      href={`/admin/registos?from=${from}&to=${to}&employee=${row.id}&status=pending`}
+                      className="rounded-full bg-sky-100 px-2.5 py-0.5 font-semibold text-sky-800 hover:bg-sky-200"
+                    >
+                      {row.pending}
+                    </Link>
+                  ) : (
+                    <span
+                      className="text-emerald-600"
+                      title={t.dashboard.allValidated}
+                    >
+                      ✓
+                    </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-center">

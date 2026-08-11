@@ -91,7 +91,7 @@ Depois de teres o admin:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` (valor aleatório longo).
 4. Deploy. O `vercel.json` já configura um **cron mensal** (dia 1, 03:00 UTC)
-   que chama `/api/admin/retention` para apagar fotos com mais de 6 meses —
+   que chama `/api/admin/retention` para apagar fotos com mais de 3 meses —
    a Vercel envia automaticamente o header `Authorization: Bearer $CRON_SECRET`.
 
 ### Instalar no telemóvel (PWA)
@@ -114,7 +114,8 @@ standalone, com ícone próprio.
 | Registos offline | Sem rede, o registo (selfie+GPS) fica no IndexedDB do telemóvel e sincroniza sozinho quando a ligação volta. Estes registos ficam com a flag "Enviado offline" e usam a hora do telemóvel como data — a hora oficial do servidor não é possível, por isso a gestão deve revê-los. O service worker serve a app do cache para ela abrir offline. |
 | Captura direta | `getUserMedia` com `facingMode: 'user'` (a foto é tirada dentro da app); fallback `<input capture="user">` só se a câmara falhar. |
 | Fotos privadas | Bucket não-público; acesso só por signed URLs com expiração (1 h no painel, 7 dias nos exports). |
-| Registos imutáveis | Sem política RLS de UPDATE em `time_entries`. |
+| Registos imutáveis | Sem política RLS de UPDATE em `time_entries` (só o backoffice, via service role, corrige/valida). |
+| Validação pelo backoffice | Cada registo nasce "por validar". No painel Registos há o estado por linha (✓ Validado / Por validar), filtro por estado e o botão "✓ Validar os que estão OK" (valida em massa só os registos sem avisos, deixando os suspeitos para revisão individual). O Resumo mostra quantos faltam validar por funcionário e os exports levam a coluna "Validado". Guarda autor e data (`validated_by`, `validated_at`) e é reversível. |
 
 **Limitação documentada:** uma PWA não consegue garantir 100% que o fallback de
 câmara não permite escolher uma foto antiga da galeria (depende do
@@ -139,7 +140,7 @@ implementadas:
 - **Minimização:** guarda-se apenas selfie, GPS e horas. A selfie é prova de
   presença; a captura sistemática do rosto aproxima-se de dado biométrico, pelo
   que a CNIL pode exigir avaliação de impacto (AIPD/DPIA).
-- **Retenção:** fotos apagadas automaticamente após **6 meses** (cron mensal ou
+- **Retenção:** fotos apagadas automaticamente após **3 meses** (cron mensal ou
   botão no painel); os registos de horas/GPS mantêm-se para fins salariais.
   O período é configurável em `src/app/api/admin/retention/route.ts`
   (`RETENTION_MONTHS`).
@@ -163,7 +164,7 @@ src/
 │       ├── employees/          # criar/editar contas (service role)
 │       ├── employees/[id]/erase# RGPD — apagar dados
 │       ├── export/             # CSV + XLSX
-│       └── retention/          # purga de fotos > 6 meses
+│       └── retention/          # purga de fotos > 3 meses
 ├── components/
 │   ├── employee/               # EmployeeHome, CameraCapture, ConsentScreen
 │   └── admin/                  # EmployeeManager, RetentionButton
@@ -209,6 +210,8 @@ public/                         # manifest.json, sw.js, ícones, offline.html
     remove a abordagem anterior.
   - `2026-08-12_folha_presenca.sql`: tabela `sheet_settings` (sábados na
     folha, por funcionário/mês).
+  - `2026-08-12_validacao.sql`: colunas `validated_at`/`validated_by`
+    (validação dos registos pelo backoffice antes do processamento salarial).
   - `2026-08-12_feriados_manual.sql`: feriados geridos no painel (pré-carga
     PT 2026–2027), cache de geocodificação (coluna "Local" da folha) e
     registos manuais / edição de hora pelo backoffice (auditados).

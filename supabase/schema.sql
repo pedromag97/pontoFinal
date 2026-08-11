@@ -59,6 +59,9 @@ create table public.time_entries (
   -- Criado manualmente pelo backoffice (funcionário esqueceu-se) — sem
   -- foto/GPS, hora definida pelo admin, sinalizado para auditoria.
   manual boolean not null default false,
+  -- Conferido pelo backoffice antes do processamento salarial (reversível).
+  validated_at timestamptz,
+  validated_by uuid references public.profiles (id) on delete set null,
   flags jsonb not null default '{}'::jsonb
 );
 
@@ -70,6 +73,7 @@ create unique index time_entries_one_per_day
 
 create index time_entries_date_idx on public.time_entries (entry_date);
 create index time_entries_employee_idx on public.time_entries (employee_id, entry_date);
+create index time_entries_validated_idx on public.time_entries (validated_at);
 
 -- Configuração do horário de almoço por dia da semana (0 = domingo … 6 = sábado).
 -- Nos dias com lunch_required, o funcionário faz 4 registos

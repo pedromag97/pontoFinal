@@ -34,6 +34,7 @@ interface ExportRow {
   accuracy: number | "";
   worksite: string;
   suspicious: string;
+  validated: string;
   photoUrl: string;
   mapUrl: string;
 }
@@ -124,6 +125,7 @@ export async function GET(request: Request) {
         ? "Manutenção"
         : (entry.worksites?.name ?? ""),
       suspicious: suspiciousParts.join(" + "),
+      validated: entry.validated_at ? "Sim" : "Não",
       photoUrl: entry.photo_path
         ? (signedByPath.get(entry.photo_path) ?? "")
         : "",
@@ -182,6 +184,7 @@ export async function GET(request: Request) {
       "Precisao (m)",
       "Obra",
       "Suspeito",
+      "Validado",
       "Foto (link 7 dias)",
       "Mapa",
     ];
@@ -200,6 +203,7 @@ export async function GET(request: Request) {
           String(row.accuracy),
           csvEscape(row.worksite),
           csvEscape(row.suspicious),
+          row.validated,
           csvEscape(row.photoUrl),
           csvEscape(row.mapUrl),
         ].join(";")
@@ -230,6 +234,7 @@ export async function GET(request: Request) {
     { header: "Precisão (m)", key: "accuracy", width: 12 },
     { header: "Obra", key: "worksite", width: 18 },
     { header: "Suspeito", key: "suspicious", width: 28 },
+    { header: "Validado", key: "validated", width: 10 },
     { header: "Foto (link 7 dias)", key: "photoUrl", width: 20 },
     { header: "Mapa", key: "mapUrl", width: 20 },
   ];

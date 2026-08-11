@@ -21,6 +21,24 @@ export async function PATCH(
   const body = await request.json().catch(() => null);
   const admin = createAdminClient();
 
+  if (typeof body?.validated === "boolean") {
+    const { error } = await admin
+      .from("time_entries")
+      .update(
+        body.validated
+          ? {
+              validated_at: new Date().toISOString(),
+              validated_by: session.user.id,
+            }
+          : { validated_at: null, validated_by: null }
+      )
+      .eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (typeof body?.maintenance === "boolean") {
     const { error } = await admin
       .from("time_entries")

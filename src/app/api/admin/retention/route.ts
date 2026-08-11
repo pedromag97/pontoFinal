@@ -4,9 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
-const RETENTION_MONTHS = 6;
+const RETENTION_MONTHS = 3;
 
-// Retenção RGPD: apaga do Storage as fotos com mais de 6 meses e limpa
+// Retenção RGPD: apaga do Storage as fotos com mais de 3 meses e limpa
 // photo_path nos registos (as horas/GPS mantêm-se para os salários).
 // - POST: chamado pelo botão no painel admin.
 // - GET:  chamado pelo cron da Vercel (Authorization: Bearer CRON_SECRET).
