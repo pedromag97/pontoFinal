@@ -543,6 +543,13 @@ export default function EmployeeHome({
         </p>
       )}
 
+      <a
+        href="/pointage/folha"
+        className="mb-5 block rounded-2xl bg-white py-3 text-center text-sm font-semibold text-teal-700 shadow-sm active:bg-slate-50"
+      >
+        📅 {t.home.monthSheet} →
+      </a>
+
       <div className="flex flex-1 flex-col justify-center pb-10">
         {nextType ? (
           <BigButton

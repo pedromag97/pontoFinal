@@ -24,6 +24,7 @@
     "dayComplete": "Dia completo ✅",
     "logout": "Sair",
     "todayList": "Registos de hoje",
+    "monthSheet": "Folha do mês",
     "pushTitle": "Ativar lembretes?",
     "pushBody": "Recebes uma notificação se te esqueceres de registar a volta do almoço ou a saída.",
     "pushEnable": "Ativar",
@@ -44,6 +45,15 @@
       "volta_almoco": "🔨",
       "saida": "🌇"
     }
+  },
+  "sheet": {
+    "title": "Folha do mês",
+    "back": "← Voltar",
+    "daysWorked": "Dias registados",
+    "totalHours": "Horas",
+    "hoursShort": "h",
+    "flaggedNote": "⚠ = registo com aviso (GPS impreciso, relógio ou fora da obra)",
+    "noData": "Sem registos neste mês."
   },
   "inactive": {
     "title": "Conta desativada",

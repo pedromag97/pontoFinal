@@ -7,6 +7,8 @@ França), com painel de gestão em Portugal. **Toda a app está em português**
 - **App do funcionário:** login → selfie pela câmara frontal → carimbo
   automático de GPS + data/hora → confirmação. Entrada e saída por dia; nos
   dias configurados pelo admin, também saída e volta do almoço (4 registos).
+  Inclui a "Folha do mês": consulta dos próprios registos com horas por dia
+  e totais mensais (dias + horas).
 - **Painel de gestão:** funcionários, registos com foto/mapa/flags de fraude,
   horário de almoço por dia da semana, exportação CSV/Excel com horas
   trabalhadas (almoço descontado), resumo mensal, retenção RGPD.
