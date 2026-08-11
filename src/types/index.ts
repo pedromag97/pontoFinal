@@ -28,9 +28,35 @@ export interface TimeEntry {
   gps_accuracy: number | null;
   client_timestamp: string | null;
   created_at: string;
+  worksite_id: string | null;
+  synced_offline: boolean;
   flags: Record<string, boolean>;
 }
 
 export interface TimeEntryWithName extends TimeEntry {
   profiles: { full_name: string } | null;
+  worksites: { name: string } | null;
+}
+
+export interface Worksite {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius_m: number;
+  active: boolean;
+  created_at: string;
+}
+
+// Registo feito sem rede, à espera de sincronização (vive no IndexedDB).
+export interface PendingEntry {
+  id: string;
+  employee_id: string;
+  entry_type: EntryType;
+  entry_date: string;
+  latitude: number;
+  longitude: number;
+  gps_accuracy: number | null;
+  client_timestamp: string;
+  photo: Blob;
 }

@@ -1,10 +1,22 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
-import { formatDate, formatTime } from "@/lib/format";
-import type { EntryType, Profile, TimeEntry } from "@/types";
+import { formatDate, formatTime, todayWorksite, weekdayWorksite } from "@/lib/format";
+import {
+  addPending,
+  getPending,
+  looksOffline,
+  syncPending,
+} from "@/lib/offline";
+import type {
+  EntryType,
+  LunchScheduleDay,
+  PendingEntry,
+  Profile,
+  TimeEntry,
+} from "@/types";
 import CameraCapture from "./CameraCapture";
 import ConsentScreen from "./ConsentScreen";
 import LogoutButton from "@/components/LogoutButton";
@@ -22,15 +34,23 @@ interface Position {
 export default function EmployeeHome({
   profile,
   initialEntries,
-  today,
-  lunchRequired,
+  lunchSchedule,
 }: {
   profile: Profile;
   initialEntries: TimeEntry[];
-  today: string;
-  lunchRequired: boolean;
+  lunchSchedule: LunchScheduleDay[];
 }) {
-  const [entries, setEntries] = useState<TimeEntry[]>(initialEntries);
+  // Data/dia calculados no cliente: quando a página vem do cache offline,
+  // o "hoje" do servidor pode estar desatualizado.
+  const today = todayWorksite();
+  const lunchRequired =
+    lunchSchedule.find((d) => d.weekday === weekdayWorksite())
+      ?.lunch_required ?? false;
+
+  const [entries, setEntries] = useState<TimeEntry[]>(
+    initialEntries.filter((e) => e.entry_date === today)
+  );
+  const [pending, setPending] = useState<PendingEntry[]>([]);
   const [consentAt, setConsentAt] = useState(profile.consent_given_at);
   const [step, setStep] = useState<Step>("home");
   const [entryType, setEntryType] = useState<EntryType>("entrada");
@@ -43,14 +63,51 @@ export default function EmployeeHome({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastEntry, setLastEntry] = useState<TimeEntry | null>(null);
+  const [lastWasOffline, setLastWasOffline] = useState(false);
   const geoRequestId = useRef(0);
+  const syncing = useRef(false);
+
+  // ---------- sincronização offline ----------
+  const runSync = useCallback(async () => {
+    if (syncing.current) return;
+    syncing.current = true;
+    try {
+      const synced = await syncPending();
+      if (synced.length > 0) {
+        const todayNow = todayWorksite();
+        setEntries((prev) => {
+          const fresh = synced.filter(
+            (e) =>
+              e.entry_date === todayNow &&
+              !prev.some((p) => p.entry_type === e.entry_type)
+          );
+          return [...prev, ...fresh];
+        });
+      }
+      setPending(await getPending());
+    } catch {
+      // IndexedDB indisponível — segue sem fila offline
+    } finally {
+      syncing.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    runSync();
+    window.addEventListener("online", runSync);
+    return () => window.removeEventListener("online", runSync);
+  }, [runSync]);
 
   // Sequência do dia: com almoço obrigatório são 4 registos, senão 2.
   const sequence: EntryType[] = lunchRequired
     ? ["entrada", "saida_almoco", "volta_almoco", "saida"]
     : ["entrada", "saida"];
-  const byType = new Map(entries.map((e) => [e.entry_type, e]));
-  const nextType = sequence.find((type) => !byType.has(type));
+  const pendingToday = pending.filter((p) => p.entry_date === today);
+  const doneTypes = new Set<EntryType>([
+    ...entries.map((e) => e.entry_type),
+    ...pendingToday.map((p) => p.entry_type),
+  ]);
+  const nextType = sequence.find((type) => !doneTypes.has(type));
 
   const requestLocation = useCallback(() => {
     setGeoError(false);
@@ -91,10 +148,46 @@ export default function EmployeeHome({
     setStep("preview");
   }
 
+  async function saveOffline(clientTimestamp: string) {
+    if (!photo || !position) return false;
+    const item: PendingEntry = {
+      id: crypto.randomUUID(),
+      employee_id: profile.id,
+      entry_type: entryType,
+      entry_date: today,
+      latitude: position.latitude,
+      longitude: position.longitude,
+      gps_accuracy: position.accuracy,
+      client_timestamp: clientTimestamp,
+      photo: photo.blob,
+    };
+    try {
+      await addPending(item);
+    } catch {
+      return false; // IndexedDB indisponível
+    }
+    setPending((prev) => [...prev, item]);
+    setLastEntry(null);
+    setLastWasOffline(true);
+    setStep("success");
+    return true;
+  }
+
   async function confirmEntry() {
     if (!photo || !position || sending) return;
     setSending(true);
     setError(null);
+    setLastWasOffline(false);
+
+    const clientTimestamp = new Date().toISOString();
+
+    // Sem rede à partida? Guarda logo localmente.
+    if (!navigator.onLine) {
+      const saved = await saveOffline(clientTimestamp);
+      setSending(false);
+      if (!saved) setError(t.errors.network);
+      return;
+    }
 
     const supabase = createClient();
     const path = `${profile.id}/${today}_${entryType}_${Date.now()}.jpg`;
@@ -103,6 +196,12 @@ export default function EmployeeHome({
       .from("selfies")
       .upload(path, photo.blob, { contentType: "image/jpeg" });
     if (uploadError) {
+      if (looksOffline(uploadError)) {
+        const saved = await saveOffline(clientTimestamp);
+        setSending(false);
+        if (!saved) setError(t.errors.network);
+        return;
+      }
       setError(t.errors.upload);
       setSending(false);
       return;
@@ -117,12 +216,18 @@ export default function EmployeeHome({
         latitude: position.latitude,
         longitude: position.longitude,
         gps_accuracy: position.accuracy,
-        client_timestamp: new Date().toISOString(),
+        client_timestamp: clientTimestamp,
       })
       .select()
       .single();
 
     if (insertError) {
+      if (looksOffline(insertError)) {
+        const saved = await saveOffline(clientTimestamp);
+        setSending(false);
+        if (!saved) setError(t.errors.network);
+        return;
+      }
       setError(
         insertError.code === "23505" ? t.errors.duplicate : t.errors.generic
       );
@@ -254,17 +359,34 @@ export default function EmployeeHome({
   }
 
   // ---------- sucesso ----------
-  if (step === "success" && lastEntry) {
-    const flagged = Object.keys(lastEntry.flags ?? {}).length > 0;
+  if (step === "success") {
+    const flagged =
+      lastEntry !== null && Object.keys(lastEntry.flags ?? {}).length > 0;
+    const successTime = lastEntry
+      ? formatTime(lastEntry.created_at)
+      : captureTime
+        ? captureTime.toLocaleTimeString("pt-PT", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "";
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6 text-center">
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-4xl">
-          ✅
+        <div
+          className={`mb-4 flex h-20 w-20 items-center justify-center rounded-full text-4xl ${
+            lastWasOffline ? "bg-amber-100" : "bg-emerald-100"
+          }`}
+        >
+          {lastWasOffline ? "⏳" : "✅"}
         </div>
         <h1 className="mb-1 text-2xl font-bold">
-          {t.success.registered[lastEntry.entry_type]}{" "}
-          {formatTime(lastEntry.created_at)}
+          {t.success.registered[entryType]} {successTime}
         </h1>
+        {lastWasOffline && (
+          <p className="mt-3 max-w-xs rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            📡 {t.success.offlineNote}
+          </p>
+        )}
         {flagged && (
           <p className="mt-3 max-w-xs rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
             ⚠️ {t.home.flaggedNotice}
@@ -281,6 +403,29 @@ export default function EmployeeHome({
   }
 
   // ---------- ecrã inicial ----------
+  const todayLog: {
+    key: string;
+    type: EntryType;
+    time: string;
+    pending: boolean;
+    flagged: boolean;
+  }[] = [
+    ...entries.map((e) => ({
+      key: e.id,
+      type: e.entry_type,
+      time: formatTime(e.created_at),
+      pending: false,
+      flagged: Object.keys(e.flags ?? {}).some((f) => f !== "photo_purged"),
+    })),
+    ...pendingToday.map((p) => ({
+      key: p.id,
+      type: p.entry_type,
+      time: formatTime(p.client_timestamp),
+      pending: true,
+      flagged: false,
+    })),
+  ].sort((a, b) => a.time.localeCompare(b.time));
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col p-5">
       <header className="mb-6 flex items-start justify-between">
@@ -294,16 +439,60 @@ export default function EmployeeHome({
         <LogoutButton label={t.home.logout} />
       </header>
 
-      <div className="mb-8 grid grid-cols-2 gap-3">
-        {sequence.map((type) => (
-          <StatusCard
-            key={type}
-            label={t.types[type]}
-            entry={byType.get(type)}
-            emptyLabel={t.home.notYet}
-          />
-        ))}
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        {sequence.map((type) => {
+          const sent = entries.find((e) => e.entry_type === type);
+          const queued = pendingToday.find((p) => p.entry_type === type);
+          return (
+            <StatusCard
+              key={type}
+              label={t.types[type]}
+              time={
+                sent
+                  ? formatTime(sent.created_at)
+                  : queued
+                    ? formatTime(queued.client_timestamp)
+                    : null
+              }
+              pending={!sent && !!queued}
+              emptyLabel={t.home.notYet}
+            />
+          );
+        })}
       </div>
+
+      {todayLog.length > 0 && (
+        <section className="mb-5 rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {t.home.todayList}
+          </h2>
+          <ul className="divide-y divide-slate-100">
+            {todayLog.map((row) => (
+              <li
+                key={row.key}
+                className="flex items-center justify-between py-2 text-sm"
+              >
+                <span className="font-medium">{t.types[row.type]}</span>
+                <span className="flex items-center gap-2">
+                  {row.flagged && <span title={t.home.flaggedNotice}>⚠️</span>}
+                  {row.pending && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      ⏳ {t.home.pendingBadge}
+                    </span>
+                  )}
+                  <span className="font-bold">{row.time}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {pendingToday.length > 0 && (
+        <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          📡 {t.home.pendingNotice}
+        </p>
+      )}
 
       <div className="flex flex-1 flex-col justify-center pb-10">
         {nextType ? (
@@ -324,24 +513,35 @@ export default function EmployeeHome({
 
 function StatusCard({
   label,
-  entry,
+  time,
+  pending,
   emptyLabel,
 }: {
   label: string;
-  entry: TimeEntry | undefined;
+  time: string | null;
+  pending: boolean;
   emptyLabel: string;
 }) {
   return (
     <div
-      className={`rounded-2xl p-4 text-center shadow-sm ${entry ? "bg-emerald-50" : "bg-white"}`}
+      className={`rounded-2xl p-4 text-center shadow-sm ${
+        time ? (pending ? "bg-amber-50" : "bg-emerald-50") : "bg-white"
+      }`}
     >
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
       <p
-        className={`mt-1 text-2xl font-bold ${entry ? "text-emerald-700" : "text-slate-300"}`}
+        className={`mt-1 text-2xl font-bold ${
+          time
+            ? pending
+              ? "text-amber-700"
+              : "text-emerald-700"
+            : "text-slate-300"
+        }`}
       >
-        {entry ? formatTime(entry.created_at) : emptyLabel}
+        {time ?? emptyLabel}
+        {pending && time && <span className="ml-1 align-middle text-sm">⏳</span>}
       </p>
     </div>
   );

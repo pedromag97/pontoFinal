@@ -32,6 +32,7 @@ interface ExportRow {
   latitude: number;
   longitude: number;
   accuracy: number | "";
+  worksite: string;
   suspicious: string;
   photoUrl: string;
   mapUrl: string;
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
   const { supabase } = session;
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name)")
+    .select("*, profiles(full_name), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("entry_date")
@@ -101,6 +102,8 @@ export async function GET(request: Request) {
     const suspiciousParts: string[] = [];
     if (flags.low_gps_accuracy) suspiciousParts.push("GPS impreciso");
     if (flags.clock_drift) suspiciousParts.push("Relógio desviado");
+    if (flags.out_of_area) suspiciousParts.push("Fora da obra");
+    if (flags.offline_sync) suspiciousParts.push("Enviado offline");
     return {
       name: entry.profiles?.full_name ?? "?",
       date: entry.entry_date,
@@ -113,6 +116,7 @@ export async function GET(request: Request) {
       latitude: entry.latitude,
       longitude: entry.longitude,
       accuracy: entry.gps_accuracy !== null ? Math.round(entry.gps_accuracy) : "",
+      worksite: entry.worksites?.name ?? "",
       suspicious: suspiciousParts.join(" + "),
       photoUrl: entry.photo_path
         ? (signedByPath.get(entry.photo_path) ?? "")
@@ -167,6 +171,7 @@ export async function GET(request: Request) {
       "Latitude",
       "Longitude",
       "Precisao (m)",
+      "Obra",
       "Suspeito",
       "Foto (link 7 dias)",
       "Mapa",
@@ -184,6 +189,7 @@ export async function GET(request: Request) {
           String(row.latitude),
           String(row.longitude),
           String(row.accuracy),
+          csvEscape(row.worksite),
           csvEscape(row.suspicious),
           csvEscape(row.photoUrl),
           csvEscape(row.mapUrl),
@@ -213,7 +219,8 @@ export async function GET(request: Request) {
     { header: "Latitude", key: "latitude", width: 12 },
     { header: "Longitude", key: "longitude", width: 12 },
     { header: "Precisão (m)", key: "accuracy", width: 12 },
-    { header: "Suspeito", key: "suspicious", width: 24 },
+    { header: "Obra", key: "worksite", width: 18 },
+    { header: "Suspeito", key: "suspicious", width: 28 },
     { header: "Foto (link 7 dias)", key: "photoUrl", width: 20 },
     { header: "Mapa", key: "mapUrl", width: 20 },
   ];

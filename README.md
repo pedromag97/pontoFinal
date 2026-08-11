@@ -100,6 +100,8 @@ standalone, com ícone próprio.
 | Precisão GPS | `gps_accuracy` guardada; > 100 m ⇒ flag `low_gps_accuracy`. |
 | 1 registo de cada tipo por dia | Índice único `(employee_id, entry_type, entry_date)` na BD. Tipos: entrada, saída almoço, volta almoço, saída. |
 | Almoço por dia da semana | Tabela `lunch_schedule` (editável no Resumo do painel). Nos dias marcados, a app do funcionário pede os 4 registos; as horas exportadas descontam o intervalo. |
+| Raio geográfico por obra | Página Obras no painel: nome + coordenadas + raio. O trigger associa cada registo à obra mais próxima dentro do raio; fora de todas as obras ativas → flag "Fora da obra". Sem obras ativas, a verificação fica desligada. |
+| Registos offline | Sem rede, o registo (selfie+GPS) fica no IndexedDB do telemóvel e sincroniza sozinho quando a ligação volta. Estes registos ficam com a flag "Enviado offline" e usam a hora do telemóvel como data — a hora oficial do servidor não é possível, por isso a gestão deve revê-los. O service worker serve a app do cache para ela abrir offline. |
 | Captura direta | `getUserMedia` com `facingMode: 'user'` (a foto é tirada dentro da app); fallback `<input capture="user">` só se a câmara falhar. |
 | Fotos privadas | Bucket não-público; acesso só por signed URLs com expiração (1 h no painel, 7 dias nos exports). |
 | Registos imutáveis | Sem política RLS de UPDATE em `time_entries`. |
@@ -110,8 +112,8 @@ dispositivo/browser). O caminho principal (`getUserMedia`) captura sempre em
 direto; o fallback só aparece se a câmara falhar. Para garantia total seria
 precisa uma app nativa. Os carimbos de hora/GPS do servidor mitigam o risco.
 
-**Fase 2 (não incluído):** raio geográfico por obra com flag "fora do local";
-modo offline com sincronização.
+**Não incluído (possível fase 3):** francês por funcionário (estrutura i18n
+pronta); notificações push; relatórios automáticos por email.
 
 ## 7. RGPD / Proteção de dados (funcionários em França)
 
@@ -182,3 +184,6 @@ public/                         # manifest.json, sw.js, ícones, offline.html
   no SQL Editor. Instalações novas só precisam do `schema.sql`.
   - `2026-08-11_almoco.sql`: tipos de registo de almoço + tabela
     `lunch_schedule` (horário de almoço por dia da semana).
+  - `2026-08-11_obras_offline.sql`: tabela `worksites` (obras com raio
+    geográfico) + colunas `worksite_id`/`synced_offline` + trigger com
+    geofence e suporte a registos sincronizados offline.

@@ -23,6 +23,18 @@ create table public.profiles (
 
 comment on table public.profiles is 'Perfil de cada utilizador (funcionário ou admin), ligado a auth.users.';
 
+-- Obras (locais de trabalho) com raio geográfico. Um registo feito fora de
+-- todas as obras ativas fica sinalizado com a flag out_of_area.
+create table public.worksites (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  latitude double precision not null,
+  longitude double precision not null,
+  radius_m int not null default 500 check (radius_m between 50 and 50000),
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 create table public.time_entries (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid not null references public.profiles (id) on delete cascade,
@@ -37,6 +49,10 @@ create table public.time_entries (
   gps_accuracy double precision, -- metros
   client_timestamp timestamptz,  -- hora reportada pelo telemóvel (só para comparação)
   created_at timestamptz not null default now(), -- hora OFICIAL (servidor)
+  worksite_id uuid references public.worksites (id) on delete set null,
+  -- true quando o registo foi feito sem rede e sincronizado mais tarde:
+  -- nesse caso entry_date vem da hora do telemóvel e o registo fica sinalizado.
+  synced_offline boolean not null default false,
   flags jsonb not null default '{}'::jsonb
 );
 
@@ -103,26 +119,69 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Distância em metros entre duas coordenadas (fórmula de haversine).
+create or replace function public.haversine_m(
+  lat1 float8, lon1 float8, lat2 float8, lon2 float8
+) returns float8
+language sql immutable
+as $$
+  select 12742000 * asin(sqrt(
+    power(sin(radians(lat2 - lat1) / 2), 2) +
+    cos(radians(lat1)) * cos(radians(lat2)) *
+    power(sin(radians(lon2 - lon1) / 2), 2)
+  ));
+$$;
+
 -- Antes de inserir um registo:
---  - força created_at/entry_date com o relógio do servidor (anti-fraude);
---  - calcula flags de suspeição (GPS impreciso, relógio do cliente desviado).
+--  - força created_at com o relógio do servidor (anti-fraude);
+--  - registos sincronizados offline usam a data da hora do telemóvel
+--    (flag offline_sync para a gestão rever);
+--  - calcula flags: GPS impreciso, relógio desviado, fora de todas as obras;
+--  - associa o registo à obra mais próxima dentro do raio.
 create or replace function public.prepare_time_entry()
 returns trigger
 language plpgsql
 as $$
 declare
   f jsonb := '{}'::jsonb;
+  matched_id uuid;
+  has_sites boolean;
 begin
   new.created_at := now();
-  new.entry_date := (now() at time zone 'Europe/Paris')::date;
+  new.synced_offline := coalesce(new.synced_offline, false);
+
+  if new.synced_offline and new.client_timestamp is not null then
+    new.entry_date := (new.client_timestamp at time zone 'Europe/Paris')::date;
+    f := f || jsonb_build_object('offline_sync', true);
+  else
+    new.entry_date := (now() at time zone 'Europe/Paris')::date;
+    if new.client_timestamp is not null
+       and abs(extract(epoch from (now() - new.client_timestamp))) > 300 then
+      f := f || jsonb_build_object('clock_drift', true);
+    end if;
+  end if;
 
   if new.gps_accuracy is not null and new.gps_accuracy > 100 then
     f := f || jsonb_build_object('low_gps_accuracy', true);
   end if;
 
-  if new.client_timestamp is not null
-     and abs(extract(epoch from (now() - new.client_timestamp))) > 300 then
-    f := f || jsonb_build_object('clock_drift', true);
+  -- Geofence: só quando existe pelo menos uma obra ativa.
+  select exists (select 1 from public.worksites where active) into has_sites;
+  if has_sites then
+    select ws.id into matched_id
+    from public.worksites ws
+    where ws.active
+      and public.haversine_m(new.latitude, new.longitude,
+                             ws.latitude, ws.longitude) <= ws.radius_m
+    order by public.haversine_m(new.latitude, new.longitude,
+                                ws.latitude, ws.longitude)
+    limit 1;
+
+    if matched_id is not null then
+      new.worksite_id := matched_id;
+    else
+      f := f || jsonb_build_object('out_of_area', true);
+    end if;
   end if;
 
   new.flags := f;
@@ -141,6 +200,26 @@ create trigger time_entries_prepare
 alter table public.profiles enable row level security;
 alter table public.time_entries enable row level security;
 alter table public.lunch_schedule enable row level security;
+alter table public.worksites enable row level security;
+
+-- worksites: todos leem (o trigger corre no contexto do funcionário);
+-- só admins criam/alteram/apagam.
+create policy "worksites_select_all"
+  on public.worksites for select to authenticated
+  using (true);
+
+create policy "worksites_insert_admin"
+  on public.worksites for insert to authenticated
+  with check (public.is_admin());
+
+create policy "worksites_update_admin"
+  on public.worksites for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "worksites_delete_admin"
+  on public.worksites for delete to authenticated
+  using (public.is_admin());
 
 -- lunch_schedule: todos leem (a app do funcionário precisa de saber o horário);
 -- só admins alteram. Linhas fixas (7) — sem insert/delete.

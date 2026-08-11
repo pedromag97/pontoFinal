@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n";
-import { todayWorksite, weekdayWorksite } from "@/lib/format";
-import type { TimeEntry } from "@/types";
+import { todayWorksite } from "@/lib/format";
+import type { LunchScheduleDay, TimeEntry } from "@/types";
 import EmployeeHome from "@/components/employee/EmployeeHome";
 import LogoutButton from "@/components/LogoutButton";
 
@@ -38,19 +38,18 @@ export default async function PointagePage() {
     .eq("entry_date", today)
     .order("created_at");
 
-  // Hoje tem pausa de almoço obrigatória? (config do admin, por dia da semana)
+  // Horário de almoço completo (7 dias): o cliente escolhe o dia certo,
+  // mesmo quando a página é servida do cache offline no dia seguinte.
   const { data: schedule } = await supabase
     .from("lunch_schedule")
-    .select("lunch_required")
-    .eq("weekday", weekdayWorksite())
-    .maybeSingle();
+    .select("weekday, lunch_required")
+    .order("weekday");
 
   return (
     <EmployeeHome
       profile={profile}
       initialEntries={(entries ?? []) as TimeEntry[]}
-      today={today}
-      lunchRequired={schedule?.lunch_required ?? false}
+      lunchSchedule={(schedule ?? []) as LunchScheduleDay[]}
     />
   );
 }

@@ -57,7 +57,8 @@ export default async function AdminDashboard({
     const emp = byEmployee.get(key)!;
     if (!emp.byDay.has(entry.entry_date)) emp.byDay.set(entry.entry_date, []);
     emp.byDay.get(entry.entry_date)!.push(entry);
-    if (Object.keys(entry.flags ?? {}).some((f) => f !== "photo_purged")) {
+    const flags = entry.flags ?? {};
+    if (flags.low_gps_accuracy || flags.clock_drift || flags.out_of_area) {
       emp.flagged += 1;
     }
   }

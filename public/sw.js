@@ -1,6 +1,9 @@
-// Service worker: cache do shell estático + fallback offline nas navegações.
-// O registo de ponto em si exige rede (offline real fica para a fase 2).
-const CACHE = "pointage-v1";
+// Service worker (só ativo em produção):
+// - cache do shell estático (cache-first, ficheiros com hash);
+// - navegações: rede primeiro; sem rede, serve a última versão em cache da
+//   página (permite abrir a app offline e registar para a fila local),
+//   com offline.html como último recurso.
+const CACHE = "pointage-v2";
 const PRECACHE = [
   "/offline.html",
   "/manifest.json",
@@ -34,15 +37,27 @@ self.addEventListener("fetch", (event) => {
   // Nunca intercetar chamadas externas (Supabase, mapas…).
   if (url.origin !== self.location.origin) return;
 
-  // Navegações: rede primeiro, página offline como fallback.
+  // Navegações: rede primeiro; offline → última versão em cache → offline.html.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/offline.html"))
+      (async () => {
+        try {
+          const response = await fetch(request);
+          if (response.ok) {
+            const cache = await caches.open(CACHE);
+            cache.put(request, response.clone());
+          }
+          return response;
+        } catch {
+          const cached = await caches.match(request);
+          return cached || caches.match("/offline.html");
+        }
+      })()
     );
     return;
   }
 
-  // Assets estáticos com hash: cache-first.
+  // Assets estáticos: cache-first (em produção têm hash no nome).
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||

@@ -23,7 +23,10 @@
     "notYet": "—",
     "dayComplete": "Dia completo ✅",
     "logout": "Sair",
-    "flaggedNotice": "Registado com um aviso (GPS impreciso ou relógio desacertado). A gestão poderá verificar.",
+    "todayList": "Registos de hoje",
+    "pendingBadge": "por enviar",
+    "pendingNotice": "Tens registos por enviar — serão sincronizados automaticamente quando houver rede.",
+    "flaggedNotice": "Registado com um aviso (GPS impreciso, relógio desacertado ou fora da obra). A gestão poderá verificar.",
     "actions": {
       "entrada": "Registar entrada",
       "saida_almoco": "Saída para almoço",
@@ -90,6 +93,7 @@
       "volta_almoco": "Regresso registado às",
       "saida": "Saída registada às"
     },
+    "offlineNote": "Sem rede — o registo ficou guardado no telemóvel e será enviado automaticamente quando houver ligação.",
     "back": "Voltar ao início"
   },
   "errors": {
@@ -102,7 +106,33 @@
     "dashboard": "Resumo",
     "entries": "Registos",
     "employees": "Funcionários",
+    "worksites": "Obras",
     "logout": "Sair"
+  },
+  "worksites": {
+    "title": "Obras",
+    "intro": "Registos feitos fora do raio de todas as obras ativas ficam sinalizados com \"Fora da obra\". Sem obras ativas, a verificação fica desligada.",
+    "newTitle": "Criar obra",
+    "name": "Nome da obra",
+    "coords": "Coordenadas (lat, lng)",
+    "coordsHint": "No Google Maps: botão direito no local → clica nas coordenadas para copiar.",
+    "radius": "Raio (metros)",
+    "create": "Criar obra",
+    "creating": "A criar…",
+    "created": "Obra criada.",
+    "invalidCoords": "Coordenadas inválidas. Formato: 48.85837, 2.29448",
+    "invalidRadius": "Raio inválido (50 a 50000 metros).",
+    "active": "Ativa",
+    "inactive": "Inativa",
+    "deactivate": "Desativar",
+    "activate": "Reativar",
+    "edit": "Editar raio",
+    "editPrompt": "Novo raio em metros (50–50000):",
+    "delete": "Apagar",
+    "deleteConfirm": "Apagar esta obra? Os registos antigos mantêm-se, apenas perdem a associação à obra.",
+    "map": "Ver mapa",
+    "noData": "Sem obras criadas. A verificação de raio está desligada.",
+    "error": "Ocorreu um erro. Tenta novamente."
   },
   "dashboard": {
     "title": "Resumo mensal",
@@ -144,9 +174,14 @@
     "ok": "OK",
     "flagLowGps": "GPS impreciso",
     "flagClockDrift": "Relógio desviado",
+    "flagOutOfArea": "Fora da obra",
+    "flagOffline": "Enviado offline",
     "flagPhotoPurged": "Foto apagada (retenção)",
+    "worksite": "Obra",
     "noPhoto": "—",
     "openMap": "Ver mapa",
+    "delete": "Apagar",
+    "deleteConfirm": "Apagar este registo e a respetiva foto? Esta ação é irreversível.",
     "noData": "Sem registos para os filtros escolhidos.",
     "timezoneNote": "Todas as horas em hora de França (Europe/Paris)."
   },

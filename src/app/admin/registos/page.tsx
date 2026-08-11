@@ -10,6 +10,7 @@ import {
   todayWorksite,
 } from "@/lib/format";
 import type { EntryType, Profile, TimeEntryWithName } from "@/types";
+import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function RegistosPage({
 
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name)")
+    .select("*, profiles(full_name), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("created_at", { ascending: false })
@@ -155,14 +156,16 @@ export default async function RegistosPage({
               <th className="px-3 py-3">{t.entries.serverTime}</th>
               <th className="px-3 py-3">{t.entries.clientTime}</th>
               <th className="px-3 py-3">{t.entries.gps}</th>
+              <th className="px-3 py-3">{t.entries.worksite}</th>
               <th className="px-3 py-3">{t.entries.accuracy}</th>
               <th className="px-3 py-3">{t.entries.status}</th>
+              <th className="px-3 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {entries.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={11} className="px-4 py-8 text-center text-slate-400">
                   {t.entries.noData}
                 </td>
               </tr>
@@ -178,8 +181,10 @@ export default async function RegistosPage({
               const flags = entry.flags ?? {};
               const lowGps = !!flags.low_gps_accuracy;
               const clockDrift = !!flags.clock_drift;
+              const outOfArea = !!flags.out_of_area;
+              const offline = !!flags.offline_sync;
               const purged = !!flags.photo_purged;
-              const suspicious = lowGps || clockDrift;
+              const suspicious = lowGps || clockDrift || outOfArea;
 
               return (
                 <tr
@@ -243,6 +248,9 @@ export default async function RegistosPage({
                       🗺 {t.entries.openMap}
                     </a>
                   </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-slate-600">
+                    {entry.worksites?.name ?? "—"}
+                  </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {entry.gps_accuracy !== null ? (
                       <span className={lowGps ? "font-semibold text-amber-700" : ""}>
@@ -253,16 +261,24 @@ export default async function RegistosPage({
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    {suspicious ? (
-                      <div className="flex flex-wrap gap-1">
-                        {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
-                        {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
-                      </div>
-                    ) : (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                        {t.entries.ok}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
+                      {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
+                      {outOfArea && <Badge>{t.entries.flagOutOfArea}</Badge>}
+                      {offline && (
+                        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                          📡 {t.entries.flagOffline}
+                        </span>
+                      )}
+                      {!suspicious && !offline && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                          {t.entries.ok}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">
+                    <DeleteEntryButton entryId={entry.id} />
                   </td>
                 </tr>
               );
