@@ -95,7 +95,7 @@ standalone, com ícone próprio.
 
 | Medida | Implementação |
 |---|---|
-| Hora oficial no servidor | Trigger `prepare_time_entry` força `created_at = now()` e `entry_date` (Europe/Paris) na base de dados — o cliente não consegue forjar. |
+| Hora oficial no servidor | Trigger `prepare_time_entry` força `created_at = now()` e `entry_date` (Europe/Lisbon) na base de dados — o cliente não consegue forjar. |
 | Hora do telemóvel guardada | `client_timestamp`; desvio > 5 min ⇒ flag `clock_drift`. |
 | Precisão GPS | `gps_accuracy` guardada; > 100 m ⇒ flag `low_gps_accuracy`. |
 | 1 registo de cada tipo por dia | Índice único `(employee_id, entry_type, entry_date)` na BD. Tipos: entrada, saída almoço, volta almoço, saída. |
@@ -160,15 +160,18 @@ src/
 ├── lib/
 │   ├── supabase/               # client / server / admin (service role)
 │   ├── i18n/                   # fr.json, pt.json (+ novos idiomas aqui)
-│   └── format.ts               # datas/horas em Europe/Paris
+│   └── format.ts               # datas/horas em Europe/Lisbon
 supabase/schema.sql             # correr no SQL Editor do Supabase
 public/                         # manifest.json, sw.js, ícones, offline.html
 ```
 
 ## 9. Notas
 
-- **Fuso horário:** todas as horas são registadas e mostradas em hora de França
-  (`Europe/Paris`), incluindo nos exports — é o fuso da obra.
+- **Fuso horário:** todas as horas são registadas e mostradas em hora de
+  Portugal (`Europe/Lisbon`), incluindo nos exports — é o fuso do processamento
+  salarial. Os funcionários em França veem as horas em hora portuguesa
+  (−1h face ao relógio local). Configurável em `src/lib/format.ts`
+  (`WORKSITE_TZ`) + trigger `prepare_time_entry` no Supabase.
 - **Idiomas:** para adicionar um idioma, criar `src/lib/i18n/en.json` com as
   mesmas chaves e registá-lo em `src/lib/i18n/index.ts`.
 - **Password reset:** feito pela gestão no painel (não há fluxo de email de

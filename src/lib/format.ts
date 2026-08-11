@@ -1,6 +1,7 @@
-// Todas as horas são apresentadas no fuso da obra (França), tanto para o
-// funcionário como para a gestão em Portugal — evita ambiguidade nos salários.
-export const WORKSITE_TZ = "Europe/Paris";
+// Todas as horas são registadas e apresentadas em hora de Portugal
+// (Lisboa/Porto) — o fuso do processamento salarial. Os funcionários em
+// França veem as horas em hora portuguesa (−1h face ao relógio local deles).
+export const WORKSITE_TZ = "Europe/Lisbon";
 
 export function todayWorksite(): string {
   // 'en-CA' devolve YYYY-MM-DD

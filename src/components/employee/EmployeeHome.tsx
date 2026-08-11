@@ -282,12 +282,7 @@ export default function EmployeeHome({
           <div className="flex justify-between">
             <span className="text-slate-500">{t.preview.time}</span>
             <span className="font-semibold">
-              {captureTime
-                ? captureTime.toLocaleTimeString("pt-PT", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "—"}
+              {captureTime ? formatTime(captureTime.toISOString()) : "—"}
             </span>
           </div>
           <div className="flex justify-between">
@@ -365,10 +360,7 @@ export default function EmployeeHome({
     const successTime = lastEntry
       ? formatTime(lastEntry.created_at)
       : captureTime
-        ? captureTime.toLocaleTimeString("pt-PT", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+        ? formatTime(captureTime.toISOString())
         : "";
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6 text-center">

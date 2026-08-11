@@ -40,9 +40,9 @@ create table public.time_entries (
   employee_id uuid not null references public.profiles (id) on delete cascade,
   entry_type text not null
     check (entry_type in ('entrada', 'saida_almoco', 'volta_almoco', 'saida')),
-  -- Dia do registo em hora de França (onde o funcionário trabalha).
+  -- Dia do registo em hora de Portugal (fuso do processamento salarial).
   -- Preenchido pelo trigger com base no relógio do SERVIDOR — o cliente não manda.
-  entry_date date not null default ((now() at time zone 'Europe/Paris')::date),
+  entry_date date not null default ((now() at time zone 'Europe/Lisbon')::date),
   photo_path text, -- caminho no bucket 'selfies'; fica null após purga de retenção
   latitude double precision not null,
   longitude double precision not null,
@@ -151,10 +151,10 @@ begin
   new.synced_offline := coalesce(new.synced_offline, false);
 
   if new.synced_offline and new.client_timestamp is not null then
-    new.entry_date := (new.client_timestamp at time zone 'Europe/Paris')::date;
+    new.entry_date := (new.client_timestamp at time zone 'Europe/Lisbon')::date;
     f := f || jsonb_build_object('offline_sync', true);
   else
-    new.entry_date := (now() at time zone 'Europe/Paris')::date;
+    new.entry_date := (now() at time zone 'Europe/Lisbon')::date;
     if new.client_timestamp is not null
        and abs(extract(epoch from (now() - new.client_timestamp))) > 300 then
       f := f || jsonb_build_object('clock_drift', true);
