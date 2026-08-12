@@ -216,12 +216,19 @@ public/                         # manifest.json, sw.js, ícones, offline.html
     PT 2026–2027), cache de geocodificação (coluna "Local" da folha) e
     registos manuais / edição de hora pelo backoffice (auditados).
 - **Lembretes push:** o funcionário ativa as notificações na app (banner 🔔).
-  Um cron no Supabase (pg_cron, 15 em 15 min) chama `/api/cron/reminders`,
-  que envia: "volta do almoço?" (2 h após a saída para almoço sem regresso) e
-  "regista a saída!" (9 h após a entrada sem saída) — máx. 1 de cada por dia,
-  apenas entre as 08h e as 22h de Lisboa. Requer as variáveis VAPID
-  (`npx web-push generate-vapid-keys`) na Vercel. No iPhone, as notificações
-  só funcionam com a app instalada no ecrã principal (iOS 16.4+).
+  Um cron no Supabase (pg_cron, 5 em 5 min) chama `/api/cron/reminders`, que
+  envia dois tipos de aviso (máx. 1 de cada tipo por funcionário por dia):
+  - **Pré-horário** (horário normal 08h–12h / 13h–17h, hora de Portugal):
+    aviso 5 min antes de cada registo — 07:55 entrada, 11:55 saída almoço,
+    12:55 volta, 16:55 saída. Seg–Sáb exceto feriados da lista; os do almoço
+    só nos dias com almoço obrigatório; só recebe quem ainda não fez esse
+    registo (e os de saída/almoço só quem registou entrada).
+  - **Esquecimento** (rede de segurança): "volta do almoço?" 2 h após a saída
+    para almoço sem regresso; "regista a saída!" 9 h após a entrada sem saída
+    — entre as 08h e as 22h.
+  Requer as variáveis VAPID (`npx web-push generate-vapid-keys`) na Vercel.
+  No iPhone, as notificações só funcionam com a app instalada no ecrã
+  principal (iOS 16.4+).
 - **Mapa do dia:** página Mapa no painel — obras (círculo = raio) e registos
   do dia escolhido, coloridos por tipo, com popup (nome, hora, foto).
   Tiles do OpenStreetMap, sem chave de API.

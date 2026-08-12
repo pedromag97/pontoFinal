@@ -38,7 +38,8 @@ create table if not exists public.reminders_sent (
 alter table public.reminders_sent enable row level security;
 
 -- ------------------------------------------------------------
--- 2. AGENDAMENTO (pg_cron chama a app de 15 em 15 minutos)
+-- 2. AGENDAMENTO (pg_cron chama a app de 5 em 5 minutos — os avisos
+--    pré-horário disparam aos :55, ex. 07:55 para a entrada das 08:00)
 --    ⚠️ Substituir <CRON_SECRET> antes de correr.
 -- ------------------------------------------------------------
 
@@ -50,7 +51,7 @@ where exists (select 1 from cron.job where jobname = 'ponto-reminders');
 
 select cron.schedule(
   'ponto-reminders',
-  '*/15 * * * *',
+  '*/5 * * * *',
   $$
   select net.http_get(
     url := 'https://ponto.lusocabo.com/api/cron/reminders',
