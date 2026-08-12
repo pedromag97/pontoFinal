@@ -185,25 +185,22 @@ export default async function RegistosPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-3 py-3">{t.entries.photo}</th>
-              <th className="px-3 py-3">{t.entries.name}</th>
-              <th className="px-3 py-3">{t.entries.date}</th>
-              <th className="px-3 py-3">{t.entries.type}</th>
-              <th className="px-3 py-3">{t.entries.serverTime}</th>
-              <th className="px-3 py-3">{t.entries.clientTime}</th>
-              <th className="px-3 py-3">{t.entries.gps}</th>
-              <th className="px-3 py-3">{t.entries.worksite}</th>
-              <th className="px-3 py-3">{t.entries.accuracy}</th>
-              <th className="px-3 py-3">{t.entries.status}</th>
-              <th className="px-3 py-3">{t.entries.validation}</th>
-              <th className="px-3 py-3"></th>
+              <th className="px-2 py-3">{t.entries.photo}</th>
+              <th className="px-2 py-3">{t.entries.name}</th>
+              <th className="px-2 py-3">{t.entries.date}</th>
+              <th className="px-2 py-3">{t.entries.type}</th>
+              <th className="px-2 py-3">{t.entries.serverTime}</th>
+              <th className="px-2 py-3">{t.entries.gps}</th>
+              <th className="px-2 py-3">{t.entries.worksite}</th>
+              <th className="px-2 py-3">{t.entries.status}</th>
+              <th className="px-2 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {entries.length === 0 && (
               <tr>
                 <td
-                  colSpan={12}
+                  colSpan={9}
                   className={`px-4 py-8 text-center ${queryError ? "font-semibold text-red-600" : "text-slate-400"}`}
                 >
                   {queryError ? t.entries.loadError : t.entries.noData}
@@ -232,14 +229,14 @@ export default async function RegistosPage({
                   key={entry.id}
                   className={`border-b border-slate-100 last:border-0 ${suspicious ? "bg-amber-50/60" : ""}`}
                 >
-                  <td className="px-3 py-2">
+                  <td className="px-2 py-1.5">
                     {signedUrl ? (
                       <a href={signedUrl} target="_blank" rel="noreferrer">
                         {/* signed URL expira — next/image não se aplica */}
                         <img
                           src={signedUrl}
                           alt=""
-                          className="h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200 transition hover:scale-105"
+                          className="h-9 w-9 rounded-lg object-cover ring-1 ring-slate-200 transition hover:scale-105"
                         />
                       </a>
                     ) : (
@@ -251,61 +248,65 @@ export default async function RegistosPage({
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 font-medium">
+                  <td
+                    className="max-w-36 truncate px-2 py-1.5 font-medium"
+                    title={entry.profiles?.full_name ?? "?"}
+                  >
                     {entry.profiles?.full_name ?? "?"}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {formatDateShort(entry.entry_date)}
+                  <td
+                    className="px-2 py-1.5 whitespace-nowrap"
+                    title={formatDateShort(entry.entry_date)}
+                  >
+                    {entry.entry_date.slice(8, 10)}/{entry.entry_date.slice(5, 7)}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 py-1.5">
                     <span
                       className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_STYLE[entry.entry_type]}`}
                     >
                       {t.types[entry.entry_type]}
                     </span>
                   </td>
-                  <td className="px-3 py-2 font-semibold whitespace-nowrap">
-                    {formatTimeSeconds(entry.created_at)}
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-slate-500">
-                    {entry.client_timestamp
-                      ? formatTime(entry.client_timestamp)
-                      : "—"}
+                  <td
+                    className="px-2 py-1.5 font-semibold whitespace-nowrap"
+                    title={
+                      entry.client_timestamp
+                        ? `${t.entries.clientTime}: ${formatTimeSeconds(entry.client_timestamp)}`
+                        : undefined
+                    }
+                  >
+                    {formatTime(entry.created_at)}
                     {drift !== null && Math.abs(drift) > 5 && (
-                      <span className="ml-1 text-xs text-amber-600">
+                      <span className="ml-1 text-xs font-normal text-amber-600">
                         ({drift > 0 ? "+" : ""}
-                        {drift} min)
+                        {drift}m)
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
                     {entry.latitude !== null && entry.longitude !== null ? (
                       <a
                         href={mapsUrl(entry.latitude, entry.longitude)}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-mono text-xs text-teal-700 underline"
-                        title={`${entry.latitude}, ${entry.longitude}`}
+                        className={`font-mono text-xs underline ${lowGps ? "font-semibold text-amber-700" : "text-teal-700"}`}
+                        title={`${entry.latitude}, ${entry.longitude} — ${t.entries.openMap}`}
                       >
-                        🗺 {t.entries.openMap}
+                        🗺
+                        {entry.gps_accuracy !== null &&
+                          ` ±${Math.round(entry.gps_accuracy)}m`}
                       </a>
                     ) : (
                       <span className="text-slate-300">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-slate-600">
+                  <td
+                    className="max-w-28 truncate px-2 py-1.5 text-slate-600"
+                    title={entry.worksites?.name ?? undefined}
+                  >
                     {entry.worksites?.name ?? "—"}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {entry.gps_accuracy !== null ? (
-                      <span className={lowGps ? "font-semibold text-amber-700" : ""}>
-                        ±{Math.round(entry.gps_accuracy)} m
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
+                  <td className="max-w-44 px-2 py-1.5">
                     <div className="flex flex-wrap gap-1">
                       {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
                       {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
@@ -341,14 +342,12 @@ export default async function RegistosPage({
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
-                    <ValidateToggle
-                      entryId={entry.id}
-                      validated={entry.validated_at !== null}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-1.5">
+                  <td className="px-2 py-1.5">
+                    <div className="flex gap-1">
+                      <ValidateToggle
+                        entryId={entry.id}
+                        validated={entry.validated_at !== null}
+                      />
                       <EditTimeButton
                         entryId={entry.id}
                         currentTime={formatTime(entry.created_at)}

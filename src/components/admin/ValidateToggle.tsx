@@ -32,14 +32,18 @@ export default function ValidateToggle({
     <button
       onClick={toggle}
       disabled={busy}
-      title={validated ? t.entries.unvalidateOne : t.entries.validateOne}
-      className={`rounded-full px-2 py-0.5 text-xs font-semibold disabled:opacity-50 ${
+      title={
         validated
-          ? "bg-emerald-600 text-white hover:bg-emerald-700"
-          : "border border-slate-300 text-slate-400 hover:bg-slate-50"
+          ? `${t.entries.validated} — ${t.entries.unvalidateOne}`
+          : `${t.entries.pendingValidation} — ${t.entries.validateOne}`
+      }
+      className={`rounded-lg border px-2 py-1 text-xs font-bold disabled:opacity-50 ${
+        validated
+          ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+          : "border-slate-300 text-slate-400 hover:bg-slate-50"
       }`}
     >
-      {validated ? `✓ ${t.entries.validated}` : t.entries.pendingValidation}
+      ✓
     </button>
   );
 }
