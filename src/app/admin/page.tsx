@@ -32,13 +32,14 @@ export default async function AdminDashboard({
   const { from, to } = monthBounds(month);
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error: queryError } = await supabase
     .from("time_entries")
-    .select("*, profiles(full_name)")
+    .select("*, profiles!employee_id(full_name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("created_at");
 
+  if (queryError) console.error("[resumo] query falhou:", queryError.message);
   const entries = (data ?? []) as TimeEntryWithName[];
 
   const { data: employees } = await supabase

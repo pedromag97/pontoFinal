@@ -69,7 +69,7 @@ export async function GET(request: Request) {
   const { supabase } = session;
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name), worksites(name)")
+    .select("*, profiles!employee_id(full_name), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("entry_date")

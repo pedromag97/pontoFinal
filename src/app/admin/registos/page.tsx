@@ -61,7 +61,7 @@ export default async function RegistosPage({
 
   let query = supabase
     .from("time_entries")
-    .select("*, profiles(full_name), worksites(name)")
+    .select("*, profiles!employee_id(full_name), worksites(name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
     .order("created_at", { ascending: false })
@@ -70,7 +70,8 @@ export default async function RegistosPage({
   if (status === "pending") query = query.is("validated_at", null);
   if (status === "validated") query = query.not("validated_at", "is", null);
 
-  const { data } = await query;
+  const { data, error: queryError } = await query;
+  if (queryError) console.error("[registos] query falhou:", queryError.message);
   const entries = (data ?? []) as TimeEntryWithName[];
 
   // Signed URLs (1h) para as miniaturas — bucket é privado.
@@ -201,8 +202,11 @@ export default async function RegistosPage({
           <tbody>
             {entries.length === 0 && (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
-                  {t.entries.noData}
+                <td
+                  colSpan={12}
+                  className={`px-4 py-8 text-center ${queryError ? "font-semibold text-red-600" : "text-slate-400"}`}
+                >
+                  {queryError ? t.entries.loadError : t.entries.noData}
                 </td>
               </tr>
             )}

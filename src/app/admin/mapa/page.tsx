@@ -20,15 +20,17 @@ export default async function MapaPage({
 
   const supabase = await createClient();
 
-  const [{ data: entries }, { data: worksites }] = await Promise.all([
+  const [{ data: entries, error: entriesError }, { data: worksites }] =
+    await Promise.all([
     supabase
       .from("time_entries")
-      .select("*, profiles(full_name), worksites(name)")
+      .select("*, profiles!employee_id(full_name), worksites(name)")
       .eq("entry_date", date)
       .order("created_at"),
     supabase.from("worksites").select("*").eq("active", true),
   ]);
 
+  if (entriesError) console.error("[mapa] query falhou:", entriesError.message);
   const entryList = (entries ?? []) as TimeEntryWithName[];
 
   // Signed URLs para abrir a foto a partir do popup do mapa.
