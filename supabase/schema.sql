@@ -62,14 +62,21 @@ create table public.time_entries (
   -- Conferido pelo backoffice antes do processamento salarial (reversível).
   validated_at timestamptz,
   validated_by uuid references public.profiles (id) on delete set null,
+  -- Recusado pelo backoffice com motivo: deixa de contar (sequência, horas,
+  -- folhas) mas fica para auditoria; o funcionário regista de novo.
+  rejected_at timestamptz,
+  rejected_by uuid references public.profiles (id) on delete set null,
+  rejection_reason text,
   flags jsonb not null default '{}'::jsonb
 );
 
 comment on table public.time_entries is 'Registos de ponto. created_at é a hora oficial (servidor); client_timestamp é a hora do telemóvel, guardada para deteção de fraude.';
 
--- Um registo de cada tipo (entrada/saida) por funcionário por dia.
+-- Um registo de cada tipo (entrada/saida) por funcionário por dia
+-- (registos recusados não contam — pode haver um novo a substituí-los).
 create unique index time_entries_one_per_day
-  on public.time_entries (employee_id, entry_type, entry_date);
+  on public.time_entries (employee_id, entry_type, entry_date)
+  where rejected_at is null;
 
 create index time_entries_date_idx on public.time_entries (entry_date);
 create index time_entries_employee_idx on public.time_entries (employee_id, entry_date);

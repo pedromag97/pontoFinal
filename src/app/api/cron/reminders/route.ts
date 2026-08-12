@@ -151,7 +151,8 @@ export async function GET(request: Request) {
   const { data: entriesData, error: entriesError } = await admin
     .from("time_entries")
     .select("employee_id, entry_type, created_at")
-    .eq("entry_date", today);
+    .eq("entry_date", today)
+    .is("rejected_at", null);
   if (entriesError) {
     return NextResponse.json({ error: entriesError.message }, { status: 500 });
   }

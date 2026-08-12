@@ -35,10 +35,12 @@ interface Position {
 export default function EmployeeHome({
   profile,
   initialEntries,
+  rejectedToday = [],
   lunchSchedule,
 }: {
   profile: Profile;
   initialEntries: TimeEntry[];
+  rejectedToday?: { entry_type: EntryType; rejection_reason: string | null }[];
   lunchSchedule: LunchScheduleDay[];
 }) {
   // Data/dia calculados no cliente: quando a página vem do cache offline,
@@ -461,6 +463,29 @@ export default function EmployeeHome({
         </div>
         <LogoutButton label={t.home.logout} />
       </header>
+
+      {rejectedToday.map((rej, i) => {
+        // Só mostra o aviso enquanto o registo não foi refeito.
+        if (doneTypes.has(rej.entry_type)) return null;
+        return (
+          <div
+            key={`${rej.entry_type}-${i}`}
+            className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4"
+          >
+            <p className="font-semibold text-red-700">
+              ❌ {t.home.rejectedTitle} — {t.types[rej.entry_type]}
+            </p>
+            {rej.rejection_reason && (
+              <p className="mt-1 text-sm text-red-600">
+                {t.home.rejectedReason}: {rej.rejection_reason}
+              </p>
+            )}
+            <p className="mt-1 text-sm font-medium text-red-700">
+              {t.home.rejectedBody}
+            </p>
+          </div>
+        );
+      })}
 
       {pushBanner === "ask" && (
         <div className="mb-5 rounded-2xl bg-white p-4 shadow-sm">

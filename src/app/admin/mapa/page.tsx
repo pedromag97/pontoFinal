@@ -26,6 +26,7 @@ export default async function MapaPage({
       .from("time_entries")
       .select("*, profiles!employee_id(full_name), worksites(name)")
       .eq("entry_date", date)
+      .is("rejected_at", null)
       .order("created_at"),
     supabase.from("worksites").select("*").eq("active", true),
   ]);

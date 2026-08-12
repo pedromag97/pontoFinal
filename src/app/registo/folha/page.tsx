@@ -46,6 +46,7 @@ export default async function FolhaPage({
     .eq("employee_id", profile.id)
     .gte("entry_date", from)
     .lte("entry_date", to)
+    .is("rejected_at", null)
     .order("created_at");
 
   const entries = (data ?? []) as TimeEntry[];

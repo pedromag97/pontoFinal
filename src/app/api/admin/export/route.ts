@@ -108,6 +108,9 @@ export async function GET(request: Request) {
     }
     if (flags.offline_sync) suspiciousParts.push("Enviado offline");
     if (entry.manual) suspiciousParts.push("Manual (backoffice)");
+    if (entry.rejected_at) {
+      suspiciousParts.push(`RECUSADO: ${entry.rejection_reason ?? ""}`);
+    }
     if (flags.manual_edit) suspiciousParts.push("Hora editada");
     return {
       name: entry.profiles?.full_name ?? "?",
@@ -143,6 +146,7 @@ export async function GET(request: Request) {
     { name: string; date: string; dayEntries: TimeEntryWithName[] }
   >();
   for (const entry of entries) {
+    if (entry.rejected_at) continue; // recusados não contam para as horas
     const key = `${entry.employee_id}|${entry.entry_date}`;
     if (!byKey.has(key)) {
       byKey.set(key, {

@@ -15,6 +15,7 @@ import MaintenanceToggle from "@/components/admin/MaintenanceToggle";
 import AddEntryForm from "@/components/admin/AddEntryForm";
 import EditTimeButton from "@/components/admin/EditTimeButton";
 import ValidateToggle from "@/components/admin/ValidateToggle";
+import RejectButton from "@/components/admin/RejectButton";
 import BulkValidateButton from "@/components/admin/BulkValidateButton";
 
 export const dynamic = "force-dynamic";
@@ -222,12 +223,20 @@ export default async function RegistosPage({
               const outOfArea = !!flags.out_of_area && !entry.maintenance;
               const offline = !!flags.offline_sync;
               const purged = !!flags.photo_purged;
-              const suspicious = lowGps || clockDrift || outOfArea;
+              const rejected = entry.rejected_at !== null;
+              const suspicious =
+                !rejected && (lowGps || clockDrift || outOfArea);
 
               return (
                 <tr
                   key={entry.id}
-                  className={`border-b border-slate-100 last:border-0 ${suspicious ? "bg-amber-50/60" : ""}`}
+                  className={`border-b border-slate-100 last:border-0 ${
+                    rejected
+                      ? "bg-red-50/50 opacity-60"
+                      : suspicious
+                        ? "bg-amber-50/60"
+                        : ""
+                  }`}
                 >
                   <td className="px-2 py-1.5">
                     {signedUrl ? (
@@ -308,6 +317,14 @@ export default async function RegistosPage({
                   </td>
                   <td className="max-w-44 px-2 py-1.5">
                     <div className="flex flex-wrap gap-1">
+                      {rejected && (
+                        <span
+                          className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white"
+                          title={entry.rejection_reason ?? undefined}
+                        >
+                          {t.entries.flagRejected}
+                        </span>
+                      )}
                       {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
                       {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
                       {outOfArea && <Badge>{t.entries.flagOutOfArea}</Badge>}
@@ -344,18 +361,23 @@ export default async function RegistosPage({
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex gap-1">
-                      <ValidateToggle
-                        entryId={entry.id}
-                        validated={entry.validated_at !== null}
-                      />
-                      <EditTimeButton
-                        entryId={entry.id}
-                        currentTime={formatTime(entry.created_at)}
-                      />
-                      <MaintenanceToggle
-                        entryId={entry.id}
-                        maintenance={entry.maintenance}
-                      />
+                      {!rejected && (
+                        <>
+                          <ValidateToggle
+                            entryId={entry.id}
+                            validated={entry.validated_at !== null}
+                          />
+                          <EditTimeButton
+                            entryId={entry.id}
+                            currentTime={formatTime(entry.created_at)}
+                          />
+                          <MaintenanceToggle
+                            entryId={entry.id}
+                            maintenance={entry.maintenance}
+                          />
+                        </>
+                      )}
+                      <RejectButton entryId={entry.id} rejected={rejected} />
                       <DeleteEntryButton entryId={entry.id} />
                     </div>
                   </td>

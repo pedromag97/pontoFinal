@@ -32,6 +32,9 @@ export interface TimeEntry {
   synced_offline: boolean;
   validated_at: string | null;
   validated_by: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+  rejection_reason: string | null;
   maintenance: boolean;
   manual: boolean;
   flags: Record<string, boolean>;

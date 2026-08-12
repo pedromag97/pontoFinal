@@ -31,7 +31,8 @@ export async function POST(request: Request) {
     .from("time_entries")
     .select("*")
     .gte("entry_date", from)
-    .lte("entry_date", to);
+    .lte("entry_date", to)
+    .is("rejected_at", null);
   if (employee) query = query.eq("employee_id", employee);
   if (validated) query = query.is("validated_at", null);
   else query = query.not("validated_at", "is", null);

@@ -36,6 +36,17 @@ export default async function PointagePage() {
     .select("*")
     .eq("employee_id", profile.id)
     .eq("entry_date", today)
+    .is("rejected_at", null)
+    .order("created_at");
+
+  // Registos de hoje recusados pelo backoffice — mostrados como aviso
+  // para o funcionário repetir o registo.
+  const { data: rejected } = await supabase
+    .from("time_entries")
+    .select("entry_type, rejection_reason")
+    .eq("employee_id", profile.id)
+    .eq("entry_date", today)
+    .not("rejected_at", "is", null)
     .order("created_at");
 
   // Horário de almoço completo (7 dias): o cliente escolhe o dia certo,
@@ -49,6 +60,9 @@ export default async function PointagePage() {
     <EmployeeHome
       profile={profile}
       initialEntries={(entries ?? []) as TimeEntry[]}
+      rejectedToday={
+        (rejected ?? []) as { entry_type: TimeEntry["entry_type"]; rejection_reason: string | null }[]
+      }
       lunchSchedule={(schedule ?? []) as LunchScheduleDay[]}
     />
   );

@@ -115,6 +115,7 @@ standalone, com ícone próprio.
 | Captura direta | `getUserMedia` com `facingMode: 'user'` (a foto é tirada dentro da app); fallback `<input capture="user">` só se a câmara falhar. |
 | Fotos privadas | Bucket não-público; acesso só por signed URLs com expiração (1 h no painel, 7 dias nos exports). |
 | Registos imutáveis | Sem política RLS de UPDATE em `time_entries` (só o backoffice, via service role, corrige/valida). |
+| Recusa com motivo | Botão 🚫 em cada registo: o backoffice recusa com um motivo obrigatório; o funcionário recebe uma notificação push com o motivo e a app volta a pedir esse registo — o novo passa a ser o válido. O recusado fica guardado para auditoria (badge "Recusado" no painel, marcado nos exports, excluído das horas/folhas). Anulável enquanto não houver registo novo. Migração: `2026-08-12_recusa.sql`. |
 | Validação pelo backoffice | Cada registo nasce "por validar". No painel Registos há o estado por linha (✓ Validado / Por validar), filtro por estado e o botão "✓ Validar os que estão OK" (valida em massa só os registos sem avisos, deixando os suspeitos para revisão individual). O Resumo mostra quantos faltam validar por funcionário e os exports levam a coluna "Validado". Guarda autor e data (`validated_by`, `validated_at`) e é reversível. |
 
 **Limitação documentada:** uma PWA não consegue garantir 100% que o fallback de

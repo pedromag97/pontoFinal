@@ -51,6 +51,7 @@ export async function GET(request: Request) {
     .eq("employee_id", employeeId)
     .gte("entry_date", from)
     .lte("entry_date", to)
+    .is("rejected_at", null)
     .order("created_at");
 
   const { data: setting } = await supabase

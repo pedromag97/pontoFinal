@@ -37,6 +37,7 @@ export default async function AdminDashboard({
     .select("*, profiles!employee_id(full_name)")
     .gte("entry_date", from)
     .lte("entry_date", to)
+    .is("rejected_at", null)
     .order("created_at");
 
   if (queryError) console.error("[resumo] query falhou:", queryError.message);
