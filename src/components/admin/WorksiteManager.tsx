@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 import { mapsUrl } from "@/lib/format";
 import type { Worksite } from "@/types";
 
@@ -52,6 +53,7 @@ export default function WorksiteManager({
   initialWorksites: Worksite[];
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [name, setName] = useState("");
   const [coords, setCoords] = useState("");
   const [radius, setRadius] = useState("500");
@@ -135,7 +137,13 @@ export default function WorksiteManager({
   }
 
   async function remove(site: Worksite) {
-    if (!confirm(t.worksites.deleteConfirm)) return;
+    const ok = await dialogs.confirm({
+      title: `${t.worksites.delete} — ${site.name}`,
+      message: t.worksites.deleteConfirm,
+      confirmLabel: t.worksites.delete,
+      danger: true,
+    });
+    if (!ok) return;
     setBusyId(site.id);
     setMessage(null);
     const supabase = createClient();

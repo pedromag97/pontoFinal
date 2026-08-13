@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 
 const t = getDictionary("pt");
 
@@ -15,13 +16,19 @@ export default function MaintenanceToggle({
   maintenance: boolean;
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [busy, setBusy] = useState(false);
 
   async function toggle() {
     const confirmText = maintenance
       ? t.entries.maintenanceUnmark
       : t.entries.maintenanceMark;
-    if (!confirm(confirmText)) return;
+    const ok = await dialogs.confirm({
+      title: maintenance ? t.entries.maintenanceOff : t.entries.maintenanceOn,
+      message: confirmText,
+      confirmLabel: t.worksites.save,
+    });
+    if (!ok) return;
     setBusy(true);
     const res = await fetch(`/api/admin/entries/${entryId}`, {
       method: "PATCH",

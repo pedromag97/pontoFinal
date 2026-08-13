@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 import { formatDateShort } from "@/lib/format";
 import type { Profile, Worksite } from "@/types";
 import WorksiteAssignment from "@/components/admin/WorksiteAssignment";
@@ -19,6 +20,7 @@ export default function EmployeeManager({
   assignedByEmployee: Record<string, string[]>;
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,8 +78,20 @@ export default function EmployeeManager({
   }
 
   async function eraseData(profile: Profile) {
-    if (!confirm(t.employees.eraseConfirm)) return;
-    const deleteAccount = confirm(t.employees.eraseAccountAlso);
+    const ok = await dialogs.confirm({
+      title: t.employees.eraseData,
+      message: `${profile.full_name} — ${t.employees.eraseConfirm}`,
+      confirmLabel: t.employees.eraseData,
+      danger: true,
+    });
+    if (!ok) return;
+    const deleteAccount = await dialogs.confirm({
+      title: t.employees.eraseAccountTitle,
+      message: t.employees.eraseAccountAlso,
+      confirmLabel: t.employees.eraseAccountYes,
+      cancelLabel: t.employees.eraseAccountNo,
+      danger: true,
+    });
     setBusyId(profile.id);
     setMessage(null);
     const res = await fetch(`/api/admin/employees/${profile.id}/erase`, {
@@ -95,13 +109,24 @@ export default function EmployeeManager({
   }
 
   async function rename(profile: Profile) {
-    const newName = prompt(t.employees.renamePrompt, profile.full_name);
+    const newName = await dialogs.prompt({
+      title: t.employees.rename,
+      label: t.employees.name,
+      defaultValue: profile.full_name,
+      confirmLabel: t.worksites.save,
+    });
     if (!newName?.trim()) return;
     await patchEmployee(profile.id, { full_name: newName.trim() });
   }
 
   async function resetPassword(profile: Profile) {
-    const newPassword = prompt(t.employees.resetPrompt);
+    const newPassword = await dialogs.prompt({
+      title: t.employees.resetPassword,
+      message: `${profile.full_name}`,
+      label: t.employees.resetPrompt,
+      type: "text",
+      confirmLabel: t.worksites.save,
+    });
     if (!newPassword) return;
     const ok = await patchEmployee(profile.id, { password: newPassword });
     if (ok) setMessage({ ok: true, text: t.employees.resetDone });
@@ -264,7 +289,14 @@ export default function EmployeeManager({
                           const confirmText = toAdmin
                             ? t.employees.makeAdminConfirm
                             : t.employees.makeEmployeeConfirm;
-                          if (!confirm(confirmText)) return;
+                          const okRole = await dialogs.confirm({
+                            title: toAdmin
+                              ? t.employees.makeAdmin
+                              : t.employees.makeEmployee,
+                            message: confirmText,
+                            confirmLabel: t.worksites.save,
+                          });
+                          if (!okRole) return;
                           const ok = await patchEmployee(profile.id, {
                             role: toAdmin ? "admin" : "employee",
                           });

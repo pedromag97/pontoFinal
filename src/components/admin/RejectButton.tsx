@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 
 const t = getDictionary("pt");
 
@@ -16,18 +17,36 @@ export default function RejectButton({
   rejected: boolean;
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [busy, setBusy] = useState(false);
 
   async function handleClick() {
     let payload: Record<string, unknown>;
     if (rejected) {
-      if (!confirm(t.entries.unrejectConfirm)) return;
+      const ok = await dialogs.confirm({
+        title: t.entries.unreject,
+        message: t.entries.unrejectConfirm,
+        confirmLabel: t.entries.unreject,
+      });
+      if (!ok) return;
       payload = { unreject: true };
     } else {
-      const reason = prompt(t.entries.rejectPrompt)?.trim();
+      const reason = (
+        await dialogs.prompt({
+          title: t.entries.reject,
+          message: t.entries.rejectPrompt,
+          label: t.entries.rejectReasonLabel,
+          placeholder: t.entries.rejectReasonPlaceholder,
+          confirmLabel: t.entries.reject,
+          danger: true,
+        })
+      )?.trim();
       if (reason === undefined || reason === null) return;
       if (!reason) {
-        alert(t.entries.rejectReasonRequired);
+        await dialogs.alert({
+          title: t.entries.reject,
+          message: t.entries.rejectReasonRequired,
+        });
         return;
       }
       payload = { reject: true, reason };
@@ -42,7 +61,10 @@ export default function RejectButton({
     setBusy(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      alert(body.error ?? t.employees.error);
+      await dialogs.alert({
+        title: t.entries.reject,
+        message: body.error ?? t.employees.error,
+      });
       return;
     }
     router.refresh();

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 
 const t = getDictionary("pt");
 
@@ -17,13 +18,24 @@ export default function EditTimeButton({
   currentTime: string;
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [busy, setBusy] = useState(false);
 
   async function edit() {
-    const input = prompt(t.entries.editTimePrompt, currentTime);
+    const input = await dialogs.prompt({
+      title: t.entries.editTime,
+      message: t.entries.editTimePrompt,
+      label: t.entries.time,
+      defaultValue: currentTime,
+      type: "time",
+      confirmLabel: t.worksites.save,
+    });
     if (!input) return;
     if (!TIME_RE.test(input.trim())) {
-      alert(t.entries.invalidTime);
+      await dialogs.alert({
+        title: t.entries.editTime,
+        message: t.entries.invalidTime,
+      });
       return;
     }
     setBusy(true);

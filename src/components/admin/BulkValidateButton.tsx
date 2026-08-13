@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 
 const t = getDictionary("pt");
 
@@ -18,11 +19,17 @@ export default function BulkValidateButton({
   employee: string;
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   async function run() {
-    if (!confirm(t.entries.validateCleanConfirm)) return;
+    const ok = await dialogs.confirm({
+      title: t.entries.validateClean,
+      message: t.entries.validateCleanConfirm,
+      confirmLabel: t.entries.validateClean,
+    });
+    if (!ok) return;
     setBusy(true);
     setResult(null);
     const res = await fetch("/api/admin/entries/validate", {

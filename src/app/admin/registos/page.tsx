@@ -1,8 +1,9 @@
+import { Fragment } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
 import {
   clockDriftMinutes,
-  formatDateShort,
+  formatDate,
   formatTime,
   formatTimeSeconds,
   mapsUrl,
@@ -87,6 +88,12 @@ export default async function RegistosPage({
     signed?.forEach((s) => {
       if (s.signedUrl && s.path) signedByPath.set(s.path, s.signedUrl);
     });
+  }
+
+  // Quantos registos por dia — mostrado no separador de cada dia.
+  const porDia = new Map<string, number>();
+  for (const entry of entries) {
+    porDia.set(entry.entry_date, (porDia.get(entry.entry_date) ?? 0) + 1);
   }
 
   const exportQs = new URLSearchParams({ from, to });
@@ -188,7 +195,6 @@ export default async function RegistosPage({
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-2 py-3">{t.entries.photo}</th>
               <th className="px-2 py-3">{t.entries.name}</th>
-              <th className="px-2 py-3">{t.entries.date}</th>
               <th className="px-2 py-3">{t.entries.type}</th>
               <th className="px-2 py-3">{t.entries.serverTime}</th>
               <th className="px-2 py-3">{t.entries.gps}</th>
@@ -201,14 +207,17 @@ export default async function RegistosPage({
             {entries.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   className={`px-4 py-8 text-center ${queryError ? "font-semibold text-red-600" : "text-slate-400"}`}
                 >
                   {queryError ? t.entries.loadError : t.entries.noData}
                 </td>
               </tr>
             )}
-            {entries.map((entry) => {
+            {entries.map((entry, indice) => {
+              const primeiroDoDia =
+                indice === 0 ||
+                entries[indice - 1].entry_date !== entry.entry_date;
               const signedUrl = entry.photo_path
                 ? signedByPath.get(entry.photo_path)
                 : undefined;
@@ -228,8 +237,21 @@ export default async function RegistosPage({
                 !rejected && (lowGps || clockDrift || outOfArea);
 
               return (
+                <Fragment key={entry.id}>
+                {primeiroDoDia && (
+                  <tr className="border-b border-slate-200 bg-slate-100/80">
+                    <td
+                      colSpan={8}
+                      className="px-3 py-1.5 text-xs font-semibold capitalize text-slate-600"
+                    >
+                      {formatDate(entry.entry_date, "pt-PT")}
+                      <span className="ml-2 font-normal text-slate-400">
+                        · {porDia.get(entry.entry_date)} {t.map.entriesCount}
+                      </span>
+                    </td>
+                  </tr>
+                )}
                 <tr
-                  key={entry.id}
                   className={`border-b border-slate-100 last:border-0 ${
                     rejected
                       ? "bg-red-50/50 opacity-60"
@@ -262,12 +284,6 @@ export default async function RegistosPage({
                     title={entry.profiles?.full_name ?? "?"}
                   >
                     {entry.profiles?.full_name ?? "?"}
-                  </td>
-                  <td
-                    className="px-2 py-1.5 whitespace-nowrap"
-                    title={formatDateShort(entry.entry_date)}
-                  >
-                    {entry.entry_date.slice(8, 10)}/{entry.entry_date.slice(5, 7)}
                   </td>
                   <td className="px-2 py-1.5">
                     <span
@@ -386,6 +402,7 @@ export default async function RegistosPage({
                     </div>
                   </td>
                 </tr>
+                </Fragment>
               );
             })}
           </tbody>

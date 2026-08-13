@@ -3,15 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 
 const t = getDictionary("pt");
 
 export default function DeleteEntryButton({ entryId }: { entryId: string }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [busy, setBusy] = useState(false);
 
   async function handleDelete() {
-    if (!confirm(t.entries.deleteConfirm)) return;
+    const ok = await dialogs.confirm({
+      title: t.entries.delete,
+      message: t.entries.deleteConfirm,
+      confirmLabel: t.entries.delete,
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     const res = await fetch(`/api/admin/entries/${entryId}`, {
       method: "DELETE",

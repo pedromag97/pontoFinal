@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/Dialogs";
 import { formatDateShort } from "@/lib/format";
 import type { Holiday } from "@/types";
 
@@ -15,6 +16,7 @@ export default function HolidayManager({
   initialHolidays: Holiday[];
 }) {
   const router = useRouter();
+  const dialogs = useDialogs();
   const [date, setDate] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,7 +47,13 @@ export default function HolidayManager({
   }
 
   async function remove(holiday: Holiday) {
-    if (!confirm(`${t.holidays.deleteConfirm} (${holiday.name})`)) return;
+    const ok = await dialogs.confirm({
+      title: t.holidays.delete,
+      message: `${t.holidays.deleteConfirm} (${holiday.name})`,
+      confirmLabel: t.holidays.delete,
+      danger: true,
+    });
+    if (!ok) return;
     const supabase = createClient();
     const { error } = await supabase
       .from("holidays")

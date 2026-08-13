@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDialogs } from "@/components/ui/Dialogs";
 
 export default function RetentionButton({
   label,
@@ -12,10 +13,17 @@ export default function RetentionButton({
   doneSuffix: string;
 }) {
   const [busy, setBusy] = useState(false);
+  const dialogs = useDialogs();
   const [result, setResult] = useState<string | null>(null);
 
   async function run() {
-    if (!confirm(confirmText)) return;
+    const ok = await dialogs.confirm({
+      title: label,
+      message: confirmText,
+      confirmLabel: label,
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setResult(null);
     const res = await fetch("/api/admin/retention", { method: "POST" });

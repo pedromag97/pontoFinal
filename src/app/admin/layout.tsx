@@ -4,6 +4,7 @@ import { getSessionProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n";
 import LogoutButton from "@/components/LogoutButton";
 import NavDropdown from "@/components/admin/NavDropdown";
+import { DialogProvider } from "@/components/ui/Dialogs";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,8 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-dvh">
+    <DialogProvider>
+      <div className="min-h-dvh">
       {/* z-index acima das camadas do Leaflet (até ~1000), para o menu
           Gestão não ficar escondido atrás do mapa */}
       <header className="relative z-[1100] border-b border-slate-200 bg-white">
@@ -51,8 +53,9 @@ export default async function AdminLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-    </div>
+        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      </div>
+    </DialogProvider>
   );
 }
 
