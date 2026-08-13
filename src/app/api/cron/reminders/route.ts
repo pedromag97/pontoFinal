@@ -7,85 +7,83 @@ import type { EntryType } from "@/types";
 export const runtime = "nodejs";
 
 // Lembretes push, verificados de 5 em 5 min por pg_cron (Supabase).
-// Dois tipos, cada um enviado no máx. 1x por funcionário por dia:
-//
-// 1. PRÉ-HORÁRIO — 5 min antes de cada hora do horário normal
-//    (08h–12h / 13h–17h, hora de Portugal), Seg–Sáb exceto feriados;
-//    os do almoço só nos dias com almoço obrigatório configurado.
-//    Só recebe quem ainda não fez esse registo.
-//
-// 2. ESQUECIMENTO — rede de segurança depois da hora:
-//    volta_almoco: saiu para almoço há 2h+ e não registou a volta;
-//    saida: entrou há 9h+ e não registou a saída.
-const VOLTA_AFTER_H = 2;
-const SAIDA_AFTER_H = 9;
-const QUIET_BEFORE = 8; // esquecimento: sem notificações fora de 08h–22h
-const QUIET_AFTER = 22;
+// Horário normal: 08h–12h / 13h–17h (hora de Portugal). Para cada um dos
+// quatro movimentos há dois avisos, ambos só para quem ainda NÃO o fez:
+//   - AVISO   5 min antes  (07:55, 11:55, 12:55, 16:55)
+//   - ATRASO 10 min depois (08:10, 12:10, 13:10, 17:10)
+// Cada aviso é enviado no máximo 1x por funcionário por dia.
+// Seg–Sáb, exceto feriados; os do almoço só nos dias com almoço obrigatório.
 
-interface PreTarget {
-  kind: string;
+const BEFORE_MIN = 5;
+const AFTER_MIN = 10;
+const WINDOW_MIN = 5; // largura da janela = cadência do cron
+
+interface Movement {
   type: EntryType;
-  minutes: number; // hora-alvo em minutos (Lisboa)
+  minutes: number; // hora oficial, em minutos desde a meia-noite (Lisboa)
+  label: string; // "08:00"
   lunchOnly: boolean; // só em dias com almoço obrigatório
-  requiresEntrada: boolean; // só para quem já registou entrada hoje
-  title: string;
-  body: string;
+  requiresEntrada: boolean; // não incomodar quem nem entrada registou
+  emoji: string;
+  nome: string; // como aparece nas mensagens
 }
 
-const PRE_TARGETS: PreTarget[] = [
+const MOVEMENTS: Movement[] = [
   {
-    kind: "pre_entrada",
     type: "entrada",
     minutes: 8 * 60,
+    label: "08:00",
     lunchOnly: false,
     requiresEntrada: false,
-    title: "Entrada às 08:00 ⏰",
-    body: "Bom dia! Não te esqueças de registar a entrada quando chegares.",
+    emoji: "⏰",
+    nome: "a entrada",
   },
   {
-    kind: "pre_saida_almoco",
     type: "saida_almoco",
     minutes: 12 * 60,
+    label: "12:00",
     lunchOnly: true,
     requiresEntrada: true,
-    title: "Saída para almoço às 12:00 🍽️",
-    body: "Regista a saída para almoço antes da pausa.",
+    emoji: "🍽️",
+    nome: "a saída para almoço",
   },
   {
-    kind: "pre_volta_almoco",
     type: "volta_almoco",
     minutes: 13 * 60,
+    label: "13:00",
     lunchOnly: true,
     requiresEntrada: true,
-    title: "Volta do almoço às 13:00 🔨",
-    body: "Regista o regresso do almoço quando voltares ao trabalho.",
+    emoji: "🔨",
+    nome: "a volta do almoço",
   },
   {
-    kind: "pre_saida",
     type: "saida",
     minutes: 17 * 60,
+    label: "17:00",
     lunchOnly: false,
     requiresEntrada: true,
-    title: "Saída às 17:00 🌇",
-    body: "Não te esqueças de registar a saída antes de ir embora.",
+    emoji: "🌇",
+    nome: "a saída",
   },
 ];
 
-const FORGOT_MESSAGES: Record<string, { title: string; body: string }> = {
-  volta_almoco: {
-    title: "Volta do almoço 🍽️",
-    body: "Esqueceste-te de registar a volta do almoço? Abre a app e regista.",
-  },
-  saida: {
-    title: "Registo de saída 🌇",
-    body: "Não te esqueças de registar a saída antes de ir embora!",
-  },
-};
+function preMessage(m: Movement) {
+  return {
+    title: `${m.nome[0].toUpperCase()}${m.nome.slice(1)} às ${m.label} ${m.emoji}`,
+    body: `Daqui a ${BEFORE_MIN} minutos. Não te esqueças de registar ${m.nome}.`,
+  };
+}
+
+function lateMessage(m: Movement) {
+  return {
+    title: `Falta registar ${m.nome} ⚠️`,
+    body: `Já passaram ${AFTER_MIN} minutos das ${m.label} e ainda não registaste ${m.nome}. Abre a app e regista.`,
+  };
+}
 
 interface EntryRow {
   employee_id: string;
   entry_type: EntryType;
-  created_at: string;
 }
 
 interface Subscription {
@@ -118,9 +116,8 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   const today = todayWorksite();
   const weekday = weekdayWorksite(); // 0 = domingo
-  const now = Date.now();
 
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const [hh, mm] = new Intl.DateTimeFormat("en-GB", {
     timeZone: WORKSITE_TZ,
     hour: "2-digit",
     minute: "2-digit",
@@ -128,10 +125,39 @@ export async function GET(request: Request) {
   })
     .format(new Date())
     .split(":");
-  const hour = parseInt(parts[0], 10);
-  const nowMinutes = hour * 60 + parseInt(parts[1], 10);
+  const nowMinutes = parseInt(hh, 10) * 60 + parseInt(mm, 10);
+  const relogio = `${hh}:${mm}`;
 
-  // Subscrições agrupadas por funcionário (quem não ativou, não recebe).
+  // Que avisos caem nesta passagem do cron?
+  const inWindow = (alvo: number) =>
+    nowMinutes >= alvo && nowMinutes < alvo + WINDOW_MIN;
+  const devidos: { m: Movement; late: boolean }[] = [];
+  for (const m of MOVEMENTS) {
+    if (inWindow(m.minutes - BEFORE_MIN)) devidos.push({ m, late: false });
+    if (inWindow(m.minutes + AFTER_MIN)) devidos.push({ m, late: true });
+  }
+
+  if (devidos.length === 0 || weekday === 0) {
+    return NextResponse.json({ sent: 0, relogio, motivo: "fora de horário" });
+  }
+
+  const { data: holiday } = await admin
+    .from("holidays")
+    .select("holiday_date")
+    .eq("holiday_date", today)
+    .maybeSingle();
+  if (holiday) {
+    return NextResponse.json({ sent: 0, relogio, motivo: "feriado" });
+  }
+
+  const { data: schedule } = await admin
+    .from("lunch_schedule")
+    .select("lunch_required")
+    .eq("weekday", weekday)
+    .maybeSingle();
+  const lunchRequired = schedule?.lunch_required ?? false;
+
+  // Subscrições (quem não ativou notificações, não recebe).
   const { data: subsData, error: subsError } = await admin
     .from("push_subscriptions")
     .select("id, user_id, endpoint, p256dh, auth");
@@ -144,154 +170,96 @@ export async function GET(request: Request) {
     subsByUser.get(sub.user_id)!.push(sub);
   }
   if (subsByUser.size === 0) {
-    return NextResponse.json({ sent: 0, skipped: "no subscriptions" });
+    return NextResponse.json({ sent: 0, relogio, motivo: "sem subscrições" });
   }
 
-  // Registos de hoje, agrupados por funcionário.
+  // Funcionários ativos com notificações.
+  const { data: activeEmployees } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("role", "employee")
+    .eq("active", true);
+  const destinatarios = ((activeEmployees ?? []) as { id: string }[])
+    .map((p) => p.id)
+    .filter((id) => subsByUser.has(id));
+
+  // Registos de hoje (os recusados não contam — têm de ser refeitos).
   const { data: entriesData, error: entriesError } = await admin
     .from("time_entries")
-    .select("employee_id, entry_type, created_at")
+    .select("employee_id, entry_type")
     .eq("entry_date", today)
     .is("rejected_at", null);
   if (entriesError) {
     return NextResponse.json({ error: entriesError.message }, { status: 500 });
   }
-  const entriesByEmployee = new Map<string, EntryRow[]>();
-  for (const row of (entriesData ?? []) as EntryRow[]) {
-    if (!entriesByEmployee.has(row.employee_id)) {
-      entriesByEmployee.set(row.employee_id, []);
-    }
-    entriesByEmployee.get(row.employee_id)!.push(row);
-  }
-
-  const has = (employeeId: string, type: EntryType) =>
-    (entriesByEmployee.get(employeeId) ?? []).some(
-      (r) => r.entry_type === type
-    );
-
-  // Lembretes a enviar neste tick: { employeeId, kind, title, body }.
-  const due: { employeeId: string; kind: string; title: string; body: string }[] =
-    [];
-
-  // ---------- 1. PRÉ-HORÁRIO ----------
-  const activePreTargets = PRE_TARGETS.filter(
-    (target) =>
-      nowMinutes >= target.minutes - 5 && nowMinutes < target.minutes
+  const feitos = new Set(
+    ((entriesData ?? []) as EntryRow[]).map(
+      (r) => `${r.employee_id}|${r.entry_type}`
+    )
   );
-  if (activePreTargets.length > 0 && weekday !== 0) {
-    const { data: holiday } = await admin
-      .from("holidays")
-      .select("holiday_date")
-      .eq("holiday_date", today)
-      .maybeSingle();
+  const jaFez = (employeeId: string, type: EntryType) =>
+    feitos.has(`${employeeId}|${type}`);
 
-    if (!holiday) {
-      const { data: schedule } = await admin
-        .from("lunch_schedule")
-        .select("lunch_required")
-        .eq("weekday", weekday)
-        .maybeSingle();
-      const lunchRequired = schedule?.lunch_required ?? false;
+  // Lembretes já enviados hoje, para não repetir.
+  const { data: sentToday } = await admin
+    .from("reminders_sent")
+    .select("employee_id, kind")
+    .eq("entry_date", today);
+  const jaEnviado = new Set(
+    ((sentToday ?? []) as { employee_id: string; kind: string }[]).map(
+      (r) => `${r.employee_id}|${r.kind}`
+    )
+  );
 
-      // Só funcionários ativos recebem.
-      const { data: activeEmployees } = await admin
-        .from("profiles")
-        .select("id")
-        .eq("role", "employee")
-        .eq("active", true);
-      const activeIds = new Set(
-        (activeEmployees ?? []).map((p) => p.id as string)
-      );
-
-      for (const target of activePreTargets) {
-        if (target.lunchOnly && !lunchRequired) continue;
-        for (const employeeId of subsByUser.keys()) {
-          if (!activeIds.has(employeeId)) continue;
-          if (has(employeeId, target.type)) continue; // já registou
-          if (target.requiresEntrada && !has(employeeId, "entrada")) continue;
-          due.push({
-            employeeId,
-            kind: target.kind,
-            title: target.title,
-            body: target.body,
-          });
-        }
-      }
-    }
-  }
-
-  // ---------- 2. ESQUECIMENTO ----------
-  if (hour >= QUIET_BEFORE && hour < QUIET_AFTER) {
-    const hoursSince = (iso: string) =>
-      (now - new Date(iso).getTime()) / 3600000;
-    for (const [employeeId, rows] of entriesByEmployee) {
-      if (!subsByUser.has(employeeId)) continue;
-      const get = (t: EntryType) => rows.find((r) => r.entry_type === t);
-      if (get("saida")) continue; // dia fechado
-
-      const saidaAlmoco = get("saida_almoco");
-      const entrada = get("entrada");
-      if (
-        saidaAlmoco &&
-        !get("volta_almoco") &&
-        hoursSince(saidaAlmoco.created_at) >= VOLTA_AFTER_H
-      ) {
-        due.push({ employeeId, kind: "volta_almoco", ...FORGOT_MESSAGES.volta_almoco });
-      } else if (entrada && hoursSince(entrada.created_at) >= SAIDA_AFTER_H) {
-        due.push({ employeeId, kind: "saida", ...FORGOT_MESSAGES.saida });
-      }
-    }
-  }
-
-  // ---------- envio (com deduplicação por dia/tipo) ----------
   let sent = 0;
-  for (const item of due) {
-    const { data: already } = await admin
-      .from("reminders_sent")
-      .select("kind")
-      .eq("employee_id", item.employeeId)
-      .eq("entry_date", today)
-      .eq("kind", item.kind)
-      .maybeSingle();
-    if (already) continue;
+  const detalhe: string[] = [];
 
-    const subs = subsByUser.get(item.employeeId) ?? [];
-    const payload = JSON.stringify({
-      title: item.title,
-      body: item.body,
-      url: "/registo",
-    });
-    let delivered = false;
-    for (const sub of subs) {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          payload
-        );
-        delivered = true;
-      } catch (e) {
-        const status = (e as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) {
-          // subscrição morta (app reinstalada, permissões retiradas…)
-          await admin.from("push_subscriptions").delete().eq("id", sub.id);
+  for (const { m, late } of devidos) {
+    if (m.lunchOnly && !lunchRequired) continue;
+    const kind = `${late ? "late" : "pre"}_${m.type}`;
+    const { title, body } = late ? lateMessage(m) : preMessage(m);
+
+    for (const employeeId of destinatarios) {
+      if (jaFez(employeeId, m.type)) continue;
+      if (m.requiresEntrada && !jaFez(employeeId, "entrada")) continue;
+      if (jaEnviado.has(`${employeeId}|${kind}`)) continue;
+
+      const payload = JSON.stringify({ title, body, url: "/registo" });
+      let delivered = false;
+      for (const sub of subsByUser.get(employeeId) ?? []) {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: { p256dh: sub.p256dh, auth: sub.auth },
+            },
+            payload
+          );
+          delivered = true;
+        } catch (e) {
+          const status = (e as { statusCode?: number }).statusCode;
+          if (status === 404 || status === 410) {
+            // subscrição morta (app reinstalada, permissões retiradas…)
+            await admin.from("push_subscriptions").delete().eq("id", sub.id);
+          }
         }
       }
-    }
 
-    if (delivered) {
-      await admin
-        .from("reminders_sent")
-        .insert({ employee_id: item.employeeId, entry_date: today, kind: item.kind });
-      sent += 1;
+      if (delivered) {
+        await admin
+          .from("reminders_sent")
+          .insert({ employee_id: employeeId, entry_date: today, kind });
+        sent += 1;
+        detalhe.push(kind);
+      }
     }
   }
 
   return NextResponse.json({
     sent,
-    subscribers: subsByUser.size,
-    window: `${String(hour).padStart(2, "0")}:${String(nowMinutes % 60).padStart(2, "0")}`,
+    relogio,
+    avisos: devidos.map((d) => `${d.late ? "late" : "pre"}_${d.m.type}`),
+    enviados: detalhe,
+    destinatarios: destinatarios.length,
   });
 }

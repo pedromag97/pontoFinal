@@ -217,19 +217,19 @@ public/                         # manifest.json, sw.js, ícones, offline.html
     PT 2026–2027), cache de geocodificação (coluna "Local" da folha) e
     registos manuais / edição de hora pelo backoffice (auditados).
 - **Lembretes push:** o funcionário ativa as notificações na app (banner 🔔).
-  Um cron no Supabase (pg_cron, 5 em 5 min) chama `/api/cron/reminders`, que
-  envia dois tipos de aviso (máx. 1 de cada tipo por funcionário por dia):
-  - **Pré-horário** (horário normal 08h–12h / 13h–17h, hora de Portugal):
-    aviso 5 min antes de cada registo — 07:55 entrada, 11:55 saída almoço,
-    12:55 volta, 16:55 saída. Seg–Sáb exceto feriados da lista; os do almoço
-    só nos dias com almoço obrigatório; só recebe quem ainda não fez esse
-    registo (e os de saída/almoço só quem registou entrada).
-  - **Esquecimento** (rede de segurança): "volta do almoço?" 2 h após a saída
-    para almoço sem regresso; "regista a saída!" 9 h após a entrada sem saída
-    — entre as 08h e as 22h.
-  Requer as variáveis VAPID (`npx web-push generate-vapid-keys`) na Vercel.
-  No iPhone, as notificações só funcionam com a app instalada no ecrã
-  principal (iOS 16.4+).
+  Um cron no Supabase (pg_cron, 5 em 5 min) chama `/api/cron/reminders`.
+  Horário normal 08h–12h / 13h–17h (hora de Portugal); para cada um dos quatro
+  movimentos há dois avisos, só para quem ainda não o registou:
+  **5 min antes** (07:55, 11:55, 12:55, 16:55) e **10 min depois**
+  (08:10, 12:10, 13:10, 17:10, com o texto "falta registar…").
+  Máx. 1 de cada por funcionário por dia; Seg–Sáb exceto feriados da tabela
+  `holidays`; os do almoço só nos dias com almoço obrigatório; os movimentos
+  a seguir à entrada só vão a quem já registou entrada.
+  Requer as variáveis VAPID (`npx web-push generate-vapid-keys`) na Vercel —
+  a chave pública só entra no site num build **sem cache**. No iPhone, as
+  notificações só funcionam com a app instalada no ecrã principal (iOS 16.4+).
+  Diagnóstico do cron: `select * from cron.job_run_details order by start_time
+  desc limit 10;` no SQL Editor.
 - **Mapa do dia:** página Mapa no painel — obras (círculo = raio) e registos
   do dia escolhido, coloridos por tipo, com popup (nome, hora, foto).
   Tiles do OpenStreetMap, sem chave de API.
