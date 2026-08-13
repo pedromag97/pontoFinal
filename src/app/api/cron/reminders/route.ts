@@ -103,10 +103,25 @@ interface Subscription {
 }
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  // O token é comparado sem espaços à volta: uma quebra de linha apanhada
+  // ao copiar o segredo não deve impedir o cron de funcionar.
+  const secret = process.env.CRON_SECRET?.trim();
   const auth = request.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const recebido = (auth ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!secret || recebido !== secret) {
+    // Diagnóstico sem revelar o segredo: distingue "variável em falta no
+    // servidor" de "valor diferente do que o cron está a enviar".
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        diagnostico: {
+          segredoConfiguradoNoServidor: !!secret,
+          recebeuCabecalho: !!auth,
+          comprimentoCoincide: !!secret && recebido.length === secret.length,
+        },
+      },
+      { status: 401 }
+    );
   }
   if (
     !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
