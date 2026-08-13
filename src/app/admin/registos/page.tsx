@@ -366,6 +366,10 @@ export default async function RegistosPage({
                           <ValidateToggle
                             entryId={entry.id}
                             validated={entry.validated_at !== null}
+                            auto={
+                              entry.validated_at !== null &&
+                              entry.validated_by === null
+                            }
                           />
                           <EditTimeButton
                             entryId={entry.id}

@@ -35,6 +35,15 @@ create table public.worksites (
   created_at timestamptz not null default now()
 );
 
+-- Obras atribuídas a cada funcionário: um registo dentro de uma obra
+-- atribuída (e sem avisos) fica validado automaticamente.
+create table public.employee_worksites (
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  worksite_id uuid not null references public.worksites (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (employee_id, worksite_id)
+);
+
 create table public.time_entries (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid not null references public.profiles (id) on delete cascade,
@@ -279,6 +288,16 @@ begin
 
     if matched_id is not null then
       new.worksite_id := matched_id;
+      -- Obra atribuída ao próprio funcionário e registo sem qualquer aviso
+      -- (GPS preciso, relógio certo, não sincronizado offline) → validado já.
+      if f = '{}'::jsonb and exists (
+        select 1 from public.employee_worksites ew
+        where ew.employee_id = new.employee_id
+          and ew.worksite_id = matched_id
+      ) then
+        new.validated_at := now();
+        new.validated_by := null; -- validação automática do sistema
+      end if;
     else
       f := f || jsonb_build_object('out_of_area', true);
     end if;
@@ -303,7 +322,19 @@ alter table public.lunch_schedule enable row level security;
 alter table public.worksites enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.reminders_sent enable row level security;
+alter table public.employee_worksites enable row level security;
 alter table public.holidays enable row level security;
+
+-- employee_worksites: cada um vê as suas obras; só admins atribuem.
+create policy "ew_select"
+  on public.employee_worksites for select to authenticated
+  using (employee_id = auth.uid() or public.is_admin());
+create policy "ew_insert_admin"
+  on public.employee_worksites for insert to authenticated
+  with check (public.is_admin());
+create policy "ew_delete_admin"
+  on public.employee_worksites for delete to authenticated
+  using (public.is_admin());
 alter table public.geocode_cache enable row level security;
 
 -- holidays: todos leem; só admins gerem.

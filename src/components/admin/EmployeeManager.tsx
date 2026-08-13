@@ -4,14 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
-import type { Profile } from "@/types";
+import type { Profile, Worksite } from "@/types";
+import WorksiteAssignment from "@/components/admin/WorksiteAssignment";
 
 const t = getDictionary("pt");
 
 export default function EmployeeManager({
   initialProfiles,
+  worksites,
+  assignedByEmployee,
 }: {
   initialProfiles: Profile[];
+  worksites: Worksite[];
+  assignedByEmployee: Record<string, string[]>;
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -178,6 +183,7 @@ export default function EmployeeManager({
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-3">{t.employees.name}</th>
               <th className="px-4 py-3">{t.employees.loginCol}</th>
+              <th className="px-4 py-3">{t.employees.worksites}</th>
               <th className="px-4 py-3">{t.employees.consent}</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3 text-right">Ações</th>
@@ -199,6 +205,17 @@ export default function EmployeeManager({
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-slate-600">
                   {profile.username ?? "—"}
+                </td>
+                <td className="px-4 py-3">
+                  {profile.role === "employee" ? (
+                    <WorksiteAssignment
+                      employeeId={profile.id}
+                      worksites={worksites}
+                      assigned={assignedByEmployee[profile.id] ?? []}
+                    />
+                  ) : (
+                    <span className="text-slate-300">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">
                   {profile.consent_given_at

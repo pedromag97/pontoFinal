@@ -10,9 +10,11 @@ const t = getDictionary("pt");
 export default function ValidateToggle({
   entryId,
   validated,
+  auto = false,
 }: {
   entryId: string;
   validated: boolean;
+  auto?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -34,7 +36,7 @@ export default function ValidateToggle({
       disabled={busy}
       title={
         validated
-          ? `${t.entries.validated} — ${t.entries.unvalidateOne}`
+          ? `${auto ? t.entries.validatedAuto : t.entries.validated} — ${t.entries.unvalidateOne}`
           : `${t.entries.pendingValidation} — ${t.entries.validateOne}`
       }
       className={`rounded-lg border px-2 py-1 text-xs font-bold disabled:opacity-50 ${
@@ -43,7 +45,7 @@ export default function ValidateToggle({
           : "border-slate-300 text-slate-400 hover:bg-slate-50"
       }`}
     >
-      ✓
+      {auto && validated ? "✓⚙" : "✓"}
     </button>
   );
 }
