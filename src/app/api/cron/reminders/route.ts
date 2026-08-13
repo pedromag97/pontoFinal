@@ -6,7 +6,9 @@ import type { EntryType } from "@/types";
 
 export const runtime = "nodejs";
 
-// Lembretes push, verificados de 5 em 5 min por pg_cron (Supabase).
+// Lembretes push, verificados por pg_cron (Supabase) — idealmente de 5 em
+// 5 min: com cadências maiores os avisos prévios não chegam a apanhar a
+// janela (ver PRE_WINDOW_MIN/LATE_WINDOW_MIN).
 // Horário normal: 08h–12h / 13h–17h (hora de Portugal). Para cada um dos
 // quatro movimentos há dois avisos, ambos só para quem ainda NÃO o fez:
 //   - AVISO   5 min antes  (07:55, 11:55, 12:55, 16:55)
@@ -16,7 +18,13 @@ export const runtime = "nodejs";
 
 const BEFORE_MIN = 5;
 const AFTER_MIN = 10;
-const WINDOW_MIN = 5; // largura da janela = cadência do cron
+// O aviso prévio só faz sentido antes da hora, por isso a janela é curta
+// (exige o cron aos 5 minutos). O de atraso dispara na primeira passagem
+// a partir dos +10 min e tem folga larga, para funcionar mesmo que o cron
+// esteja configurado com uma cadência maior — a deduplicação diária evita
+// repetições.
+const PRE_WINDOW_MIN = 5;
+const LATE_WINDOW_MIN = 30;
 
 interface Movement {
   type: EntryType;
@@ -129,12 +137,16 @@ export async function GET(request: Request) {
   const relogio = `${hh}:${mm}`;
 
   // Que avisos caem nesta passagem do cron?
-  const inWindow = (alvo: number) =>
-    nowMinutes >= alvo && nowMinutes < alvo + WINDOW_MIN;
+  const inWindow = (inicio: number, largura: number) =>
+    nowMinutes >= inicio && nowMinutes < inicio + largura;
   const devidos: { m: Movement; late: boolean }[] = [];
   for (const m of MOVEMENTS) {
-    if (inWindow(m.minutes - BEFORE_MIN)) devidos.push({ m, late: false });
-    if (inWindow(m.minutes + AFTER_MIN)) devidos.push({ m, late: true });
+    if (inWindow(m.minutes - BEFORE_MIN, PRE_WINDOW_MIN)) {
+      devidos.push({ m, late: false });
+    }
+    if (inWindow(m.minutes + AFTER_MIN, LATE_WINDOW_MIN)) {
+      devidos.push({ m, late: true });
+    }
   }
 
   if (devidos.length === 0 || weekday === 0) {
