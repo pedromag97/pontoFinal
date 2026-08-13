@@ -68,7 +68,7 @@ export async function GET(request: Request) {
   // Local de trabalho no cabeçalho: obra mais frequente do mês.
   const counts = new Map<string, number>();
   for (const entry of entryList) {
-    const name = entry.maintenance ? "Manutenção" : entry.worksites?.name;
+    const name = entry.worksites?.name;
     if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
   }
   const worksiteName =

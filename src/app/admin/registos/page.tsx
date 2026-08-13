@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
 import {
@@ -10,9 +9,10 @@ import {
   monthWorksite,
   todayWorksite,
 } from "@/lib/format";
-import type { EntryType, Profile, TimeEntryWithName } from "@/types";
+import type { EntryType, Profile, TimeEntryWithName, Worksite } from "@/types";
 import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
-import MaintenanceToggle from "@/components/admin/MaintenanceToggle";
+import WorksitePicker from "@/components/admin/WorksitePicker";
+import DayGroup from "@/components/admin/DayGroup";
 import AddEntryForm from "@/components/admin/AddEntryForm";
 import EditTimeButton from "@/components/admin/EditTimeButton";
 import ValidateToggle from "@/components/admin/ValidateToggle";
@@ -55,11 +55,14 @@ export default async function RegistosPage({
 
   const supabase = await createClient();
 
-  const { data: employees } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("role", "employee")
-    .order("full_name");
+  const [{ data: employees }, { data: worksites }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("role", "employee").order("full_name"),
+    supabase
+      .from("worksites")
+      .select("*")
+      .order("mobile")
+      .order("name"),
+  ]);
 
   let query = supabase
     .from("time_entries")
@@ -90,10 +93,12 @@ export default async function RegistosPage({
     });
   }
 
-  // Quantos registos por dia — mostrado no separador de cada dia.
-  const porDia = new Map<string, number>();
+  // Registos agrupados por dia, pela ordem em que vêm (mais recente primeiro).
+  const dias: { data: string; registos: TimeEntryWithName[] }[] = [];
   for (const entry of entries) {
-    porDia.set(entry.entry_date, (porDia.get(entry.entry_date) ?? 0) + 1);
+    const ultimo = dias[dias.length - 1];
+    if (ultimo && ultimo.data === entry.entry_date) ultimo.registos.push(entry);
+    else dias.push({ data: entry.entry_date, registos: [entry] });
   }
 
   const exportQs = new URLSearchParams({ from, to });
@@ -214,10 +219,15 @@ export default async function RegistosPage({
                 </td>
               </tr>
             )}
-            {entries.map((entry, indice) => {
-              const primeiroDoDia =
-                indice === 0 ||
-                entries[indice - 1].entry_date !== entry.entry_date;
+            {dias.map((dia) => (
+              <DayGroup
+                key={dia.data}
+                date={dia.data}
+                label={formatDate(dia.data, "pt-PT")}
+                count={dia.registos.length}
+                columns={8}
+              >
+                {dia.registos.map((entry) => {
               const signedUrl = entry.photo_path
                 ? signedByPath.get(entry.photo_path)
                 : undefined;
@@ -229,7 +239,7 @@ export default async function RegistosPage({
               const lowGps = !!flags.low_gps_accuracy;
               const clockDrift = !!flags.clock_drift;
               // manutenção justifica o "fora da obra" — deixa de ser suspeito
-              const outOfArea = !!flags.out_of_area && !entry.maintenance;
+              const outOfArea = !!flags.out_of_area;
               const offline = !!flags.offline_sync;
               const purged = !!flags.photo_purged;
               const rejected = entry.rejected_at !== null;
@@ -237,21 +247,8 @@ export default async function RegistosPage({
                 !rejected && (lowGps || clockDrift || outOfArea);
 
               return (
-                <Fragment key={entry.id}>
-                {primeiroDoDia && (
-                  <tr className="border-b border-slate-200 bg-slate-100/80">
-                    <td
-                      colSpan={8}
-                      className="px-3 py-1.5 text-xs font-semibold capitalize text-slate-600"
-                    >
-                      {formatDate(entry.entry_date, "pt-PT")}
-                      <span className="ml-2 font-normal text-slate-400">
-                        · {porDia.get(entry.entry_date)} {t.map.entriesCount}
-                      </span>
-                    </td>
-                  </tr>
-                )}
                 <tr
+                  key={entry.id}
                   className={`border-b border-slate-100 last:border-0 ${
                     rejected
                       ? "bg-red-50/50 opacity-60"
@@ -325,11 +322,15 @@ export default async function RegistosPage({
                       <span className="text-slate-300">—</span>
                     )}
                   </td>
-                  <td
-                    className="max-w-28 truncate px-2 py-1.5 text-slate-600"
-                    title={entry.worksites?.name ?? undefined}
-                  >
-                    {entry.worksites?.name ?? "—"}
+                  <td className="px-2 py-1.5">
+                    <WorksitePicker
+                      entryId={entry.id}
+                      worksiteId={entry.worksite_id}
+                      worksites={(worksites ?? []) as Worksite[]}
+                      automatic={
+                        entry.worksite_id !== null && !flags.worksite_manual
+                      }
+                    />
                   </td>
                   <td className="max-w-44 px-2 py-1.5">
                     <div className="flex flex-wrap gap-1">
@@ -354,11 +355,6 @@ export default async function RegistosPage({
                           {t.entries.flagEdited}
                         </span>
                       )}
-                      {entry.maintenance && (
-                        <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
-                          {t.entries.flagMaintenance}
-                        </span>
-                      )}
                       {offline && (
                         <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
                           📡 {t.entries.flagOffline}
@@ -366,7 +362,6 @@ export default async function RegistosPage({
                       )}
                       {!suspicious &&
                         !offline &&
-                        !entry.maintenance &&
                         !entry.manual &&
                         !flags.manual_edit && (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
@@ -391,10 +386,6 @@ export default async function RegistosPage({
                             entryId={entry.id}
                             currentTime={formatTime(entry.created_at)}
                           />
-                          <MaintenanceToggle
-                            entryId={entry.id}
-                            maintenance={entry.maintenance}
-                          />
                         </>
                       )}
                       <RejectButton entryId={entry.id} rejected={rejected} />
@@ -402,9 +393,10 @@ export default async function RegistosPage({
                     </div>
                   </td>
                 </tr>
-                </Fragment>
               );
             })}
+              </DayGroup>
+            ))}
           </tbody>
         </table>
       </div>

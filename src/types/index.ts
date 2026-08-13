@@ -35,7 +35,6 @@ export interface TimeEntry {
   rejected_at: string | null;
   rejected_by: string | null;
   rejection_reason: string | null;
-  maintenance: boolean;
   manual: boolean;
   flags: Record<string, boolean>;
 }
@@ -53,8 +52,10 @@ export interface TimeEntryWithName extends TimeEntry {
 export interface Worksite {
   id: string;
   name: string;
-  latitude: number;
-  longitude: number;
+  // Obras móveis não têm ponto fixo: ficam fora da verificação de raio.
+  mobile: boolean;
+  latitude: number | null;
+  longitude: number | null;
   radius_m: number;
   active: boolean;
   created_at: string;

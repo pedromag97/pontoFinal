@@ -103,9 +103,7 @@ export async function GET(request: Request) {
     const suspiciousParts: string[] = [];
     if (flags.low_gps_accuracy) suspiciousParts.push("GPS impreciso");
     if (flags.clock_drift) suspiciousParts.push("Relógio desviado");
-    if (flags.out_of_area && !entry.maintenance) {
-      suspiciousParts.push("Fora da obra");
-    }
+    if (flags.out_of_area) suspiciousParts.push("Fora da obra");
     if (flags.offline_sync) suspiciousParts.push("Enviado offline");
     if (entry.manual) suspiciousParts.push("Manual (backoffice)");
     if (entry.rejected_at) {
@@ -124,9 +122,7 @@ export async function GET(request: Request) {
       latitude: entry.latitude ?? "",
       longitude: entry.longitude ?? "",
       accuracy: entry.gps_accuracy !== null ? Math.round(entry.gps_accuracy) : "",
-      worksite: entry.maintenance
-        ? "Manutenção"
-        : (entry.worksites?.name ?? ""),
+      worksite: entry.worksites?.name ?? "",
       suspicious: suspiciousParts.join(" + "),
       validated: entry.validated_at ? "Sim" : "Não",
       photoUrl: entry.photo_path

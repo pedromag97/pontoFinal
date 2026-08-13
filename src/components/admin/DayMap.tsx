@@ -48,6 +48,8 @@ export default function DayMap({
 
       // Obras: círculo com o raio real.
       for (const site of worksites) {
+        // Obras móveis não têm ponto fixo — não se desenham.
+        if (site.latitude === null || site.longitude === null) continue;
         const center: [number, number] = [site.latitude, site.longitude];
         L.circle(center, {
           radius: site.radius_m,
@@ -71,7 +73,7 @@ export default function DayMap({
         const suspicious =
           !!flags.low_gps_accuracy ||
           !!flags.clock_drift ||
-          (!!flags.out_of_area && !entry.maintenance);
+          !!flags.out_of_area;
         const position: [number, number] = [entry.latitude, entry.longitude];
         const photoUrl = entry.photo_path
           ? photoUrls[entry.photo_path]
@@ -80,11 +82,7 @@ export default function DayMap({
         const popup = [
           `<b>${escapeHtml(entry.profiles?.full_name ?? "?")}</b>`,
           `${t.types[entry.entry_type]} — ${formatTime(entry.created_at)}`,
-          entry.maintenance
-            ? "🔧 Manutenção"
-            : entry.worksites?.name
-              ? `🏗 ${escapeHtml(entry.worksites.name)}`
-              : "",
+          entry.worksites?.name ? `🏗 ${escapeHtml(entry.worksites.name)}` : "",
           suspicious ? "⚠️ suspeito" : "",
           photoUrl
             ? `<a href="${photoUrl}" target="_blank" rel="noreferrer">📷 ${t.map.openPhoto}</a>`

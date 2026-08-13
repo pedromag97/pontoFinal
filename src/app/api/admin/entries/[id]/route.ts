@@ -15,7 +15,8 @@ const TYPE_LABEL: Record<EntryType, string> = {
 };
 
 // Editar um registo:
-// - maintenance: marcar/desmarcar como manutenção (out_of_area deixa de contar);
+// - worksite_id: atribuir/limpar a obra à mão (útil nas obras móveis, que
+//   não têm raio); atribuir uma obra limpa o aviso "fora da obra";
 // - time "HH:MM": corrigir a hora (fica sinalizado flags.manual_edit);
 // - reject + reason: recusar com motivo (o funcionário é notificado e
 //   regista de novo); unreject: anular a recusa.
@@ -50,10 +51,30 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
-  if (typeof body?.maintenance === "boolean") {
+  if ("worksite_id" in (body ?? {})) {
+    const worksiteId =
+      typeof body.worksite_id === "string" && body.worksite_id
+        ? body.worksite_id
+        : null;
+
+    const { data: entry } = await admin
+      .from("time_entries")
+      .select("flags")
+      .eq("id", id)
+      .maybeSingle();
+    if (!entry) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+
+    // Atribuir uma obra à mão resolve o "fora da obra"; retirá-la repõe o
+    // aviso, para o registo voltar a pedir revisão.
+    const flags = { ...(entry.flags as Record<string, unknown>) };
+    if (worksiteId) delete flags.out_of_area;
+    else if (flags.manual !== true) flags.out_of_area = true;
+
     const { error } = await admin
       .from("time_entries")
-      .update({ maintenance: body.maintenance })
+      .update({ worksite_id: worksiteId, flags })
       .eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

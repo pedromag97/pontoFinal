@@ -14,8 +14,9 @@ const COORDS_RE = /^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/;
 
 interface WorksiteFields {
   name: string;
-  latitude: number;
-  longitude: number;
+  mobile: boolean;
+  latitude: number | null;
+  longitude: number | null;
   radius_m: number;
 }
 
@@ -23,8 +24,22 @@ interface WorksiteFields {
 function parseFields(
   name: string,
   coords: string,
-  radius: string
+  radius: string,
+  mobile: boolean
 ): { fields: WorksiteFields | null; error: string | null } {
+  // Obras móveis não têm ponto fixo: dispensam coordenadas e raio.
+  if (mobile) {
+    return {
+      fields: {
+        name: name.trim(),
+        mobile: true,
+        latitude: null,
+        longitude: null,
+        radius_m: 500,
+      },
+      error: null,
+    };
+  }
   const match = COORDS_RE.exec(coords);
   if (!match) return { fields: null, error: t.worksites.invalidCoords };
   const latitude = parseFloat(match[1].replace(",", "."));
@@ -42,7 +57,13 @@ function parseFields(
     return { fields: null, error: t.worksites.invalidRadius };
   }
   return {
-    fields: { name: name.trim(), latitude, longitude, radius_m: radiusM },
+    fields: {
+      name: name.trim(),
+      mobile: false,
+      latitude,
+      longitude,
+      radius_m: radiusM,
+    },
     error: null,
   };
 }
@@ -57,6 +78,7 @@ export default function WorksiteManager({
   const [name, setName] = useState("");
   const [coords, setCoords] = useState("");
   const [radius, setRadius] = useState("500");
+  const [mobile, setMobile] = useState(false);
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
     null
@@ -67,12 +89,13 @@ export default function WorksiteManager({
     name: string;
     coords: string;
     radius: string;
+    mobile: boolean;
   } | null>(null);
 
   async function createWorksite(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
-    const { fields, error } = parseFields(name, coords, radius);
+    const { fields, error } = parseFields(name, coords, radius, mobile);
     if (!fields) {
       setMessage({ ok: false, text: error! });
       return;
@@ -91,6 +114,7 @@ export default function WorksiteManager({
     setName("");
     setCoords("");
     setRadius("500");
+    setMobile(false);
     router.refresh();
   }
 
@@ -116,8 +140,12 @@ export default function WorksiteManager({
     setEditing({
       id: site.id,
       name: site.name,
-      coords: `${site.latitude}, ${site.longitude}`,
+      coords:
+        site.latitude !== null && site.longitude !== null
+          ? `${site.latitude}, ${site.longitude}`
+          : "",
       radius: String(site.radius_m),
+      mobile: site.mobile,
     });
   }
 
@@ -126,7 +154,8 @@ export default function WorksiteManager({
     const { fields, error } = parseFields(
       editing.name,
       editing.coords,
-      editing.radius
+      editing.radius,
+      editing.mobile
     );
     if (!fields || !fields.name) {
       setMessage({ ok: false, text: error ?? t.worksites.error });
@@ -179,23 +208,36 @@ export default function WorksiteManager({
             onChange={(e) => setName(e.target.value)}
             className="min-w-52 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
-          <input
-            required
-            placeholder={t.worksites.coords}
-            value={coords}
-            onChange={(e) => setCoords(e.target.value)}
-            className="min-w-52 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-          <input
-            required
-            type="number"
-            min={50}
-            max={50000}
-            placeholder={t.worksites.radius}
-            value={radius}
-            onChange={(e) => setRadius(e.target.value)}
-            className="w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
+          {!mobile && (
+            <>
+              <input
+                required
+                placeholder={t.worksites.coords}
+                value={coords}
+                onChange={(e) => setCoords(e.target.value)}
+                className="min-w-52 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <input
+                required
+                type="number"
+                min={50}
+                max={50000}
+                placeholder={t.worksites.radius}
+                value={radius}
+                onChange={(e) => setRadius(e.target.value)}
+                className="w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </>
+          )}
+          <label className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={mobile}
+              onChange={(e) => setMobile(e.target.checked)}
+              className="h-4 w-4 accent-teal-700"
+            />
+            ⇄ {t.worksites.mobile}
+          </label>
           <button
             type="submit"
             disabled={creating}
@@ -204,7 +246,9 @@ export default function WorksiteManager({
             {creating ? t.worksites.creating : t.worksites.create}
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-400">{t.worksites.coordsHint}</p>
+        <p className="mt-2 text-xs text-slate-400">
+          {mobile ? t.worksites.mobileHint : t.worksites.coordsHint}
+        </p>
       </form>
 
       {message && (
@@ -258,6 +302,21 @@ export default function WorksiteManager({
                         />
                       </td>
                       <td className="px-4 py-2">
+                        <label className="mb-1 flex items-center gap-1.5 text-xs text-slate-500">
+                          <input
+                            type="checkbox"
+                            checked={editing.mobile}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                mobile: e.target.checked,
+                              })
+                            }
+                            className="h-3.5 w-3.5 accent-teal-700"
+                          />
+                          ⇄ {t.worksites.mobileBadge}
+                        </label>
+                        {!editing.mobile && (
                         <input
                           value={editing.coords}
                           onChange={(e) =>
@@ -266,6 +325,7 @@ export default function WorksiteManager({
                           placeholder={t.worksites.coords}
                           className="w-full min-w-44 rounded-lg border border-teal-500 px-2 py-1.5 font-mono text-xs"
                         />
+                        )}
                       </td>
                       <td className="px-4 py-2 text-right">
                         <input
@@ -312,20 +372,37 @@ export default function WorksiteManager({
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-3 font-medium">{site.name}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {site.name}
+                        {site.mobile && (
+                          <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                            ⇄ {t.worksites.mobileBadge}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
-                        <a
-                          href={mapsUrl(site.latitude, site.longitude)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-mono text-xs text-teal-700 underline"
-                        >
-                          🗺 {site.latitude.toFixed(5)},{" "}
-                          {site.longitude.toFixed(5)}
-                        </a>
+                        {site.latitude !== null && site.longitude !== null ? (
+                          <a
+                            href={mapsUrl(site.latitude, site.longitude)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono text-xs text-teal-700 underline"
+                          >
+                            🗺 {site.latitude.toFixed(5)},{" "}
+                            {site.longitude.toFixed(5)}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">
+                            {t.worksites.mobileBadge}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {site.radius_m} m
+                        {site.mobile ? (
+                          <span className="text-slate-300">—</span>
+                        ) : (
+                          `${site.radius_m} m`
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span

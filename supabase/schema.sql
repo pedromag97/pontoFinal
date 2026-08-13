@@ -28,11 +28,16 @@ comment on table public.profiles is 'Perfil de cada utilizador (funcionário ou 
 create table public.worksites (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  latitude double precision not null,
-  longitude double precision not null,
+  -- Obras móveis (equipas com grandes zonas de intervenção) não têm ponto
+  -- fixo: ficam fora da verificação de raio e são atribuídas à mão.
+  mobile boolean not null default false,
+  latitude double precision,
+  longitude double precision,
   radius_m int not null default 500 check (radius_m between 50 and 50000),
   active boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint worksites_fixas_com_coords
+    check (mobile or (latitude is not null and longitude is not null))
 );
 
 -- Obras atribuídas a cada funcionário: um registo dentro de uma obra
@@ -62,9 +67,6 @@ create table public.time_entries (
   -- true quando o registo foi feito sem rede e sincronizado mais tarde:
   -- nesse caso entry_date vem da hora do telemóvel e o registo fica sinalizado.
   synced_offline boolean not null default false,
-  -- Marcado pelo backoffice: registo feito em trabalho de manutenção
-  -- (grandes zonas) — a flag out_of_area deixa de contar como suspeita.
-  maintenance boolean not null default false,
   -- Criado manualmente pelo backoffice (funcionário esqueceu-se) — sem
   -- foto/GPS, hora definida pelo admin, sinalizado para auditoria.
   manual boolean not null default false,
@@ -275,11 +277,13 @@ begin
   end if;
 
   -- Geofence: só quando existe pelo menos uma obra ativa.
-  select exists (select 1 from public.worksites where active) into has_sites;
+  select exists (select 1 from public.worksites where active and not mobile)
+    into has_sites;
   if has_sites then
     select ws.id into matched_id
     from public.worksites ws
     where ws.active
+      and not ws.mobile
       and public.haversine_m(new.latitude, new.longitude,
                              ws.latitude, ws.longitude) <= ws.radius_m
     order by public.haversine_m(new.latitude, new.longitude,

@@ -235,6 +235,7 @@ export default function EmployeeManager({
                   {profile.role === "employee" ? (
                     <WorksiteAssignment
                       employeeId={profile.id}
+                      employeeName={profile.full_name}
                       worksites={worksites}
                       assigned={assignedByEmployee[profile.id] ?? []}
                     />
