@@ -8,6 +8,7 @@ export function isSuspicious(entry: TimeEntry): boolean {
   return (
     !!flags.low_gps_accuracy ||
     !!flags.clock_drift ||
-    !!flags.out_of_area
+    !!flags.out_of_area ||
+    !!flags.bad_client_clock
   );
 }

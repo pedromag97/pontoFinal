@@ -262,8 +262,18 @@ begin
   new.synced_offline := coalesce(new.synced_offline, false);
 
   if new.synced_offline and new.client_timestamp is not null then
-    new.entry_date := (new.client_timestamp at time zone 'Europe/Lisbon')::date;
     f := f || jsonb_build_object('offline_sync', true);
+
+    -- A data de um registo offline vem do telemóvel; só se aceita quando
+    -- é plausível (não no futuro, não com mais de 7 dias). Fora disso é
+    -- recusada: fica o dia do servidor e a marca bad_client_clock.
+    if new.client_timestamp <= now() + interval '5 minutes'
+       and new.client_timestamp >= now() - interval '7 days' then
+      new.entry_date := (new.client_timestamp at time zone 'Europe/Lisbon')::date;
+    else
+      new.entry_date := (now() at time zone 'Europe/Lisbon')::date;
+      f := f || jsonb_build_object('bad_client_clock', true);
+    end if;
   else
     new.entry_date := (now() at time zone 'Europe/Lisbon')::date;
     if new.client_timestamp is not null

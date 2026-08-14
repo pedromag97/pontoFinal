@@ -266,6 +266,7 @@
     "maintenanceMark": "Marcar este registo como manutenção? A flag \"Fora da obra\" deixa de contar como suspeita.",
     "maintenanceUnmark": "Desmarcar manutenção neste registo? Se estava fora de obra, a flag volta a contar.",
     "flagOffline": "Enviado offline",
+    "flagBadClock": "Data do telemóvel recusada",
     "flagPhotoPurged": "Foto apagada (retenção)",
     "worksite": "Obra",
     "noPhoto": "—",

@@ -241,6 +241,7 @@ export default async function RegistosPage({
               // manutenção justifica o "fora da obra" — deixa de ser suspeito
               const outOfArea = !!flags.out_of_area;
               const offline = !!flags.offline_sync;
+              const badClock = !!flags.bad_client_clock;
               const purged = !!flags.photo_purged;
               const rejected = entry.rejected_at !== null;
               const suspicious =
@@ -345,6 +346,7 @@ export default async function RegistosPage({
                       {lowGps && <Badge>{t.entries.flagLowGps}</Badge>}
                       {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
                       {outOfArea && <Badge>{t.entries.flagOutOfArea}</Badge>}
+                      {badClock && <Badge>{t.entries.flagBadClock}</Badge>}
                       {entry.manual && (
                         <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
                           {t.entries.flagManual}

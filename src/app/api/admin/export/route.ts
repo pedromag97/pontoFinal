@@ -105,6 +105,9 @@ export async function GET(request: Request) {
     if (flags.clock_drift) suspiciousParts.push("Relógio desviado");
     if (flags.out_of_area) suspiciousParts.push("Fora da obra");
     if (flags.offline_sync) suspiciousParts.push("Enviado offline");
+    if (flags.bad_client_clock) {
+      suspiciousParts.push("Data do telemóvel recusada");
+    }
     if (entry.manual) suspiciousParts.push("Manual (backoffice)");
     if (entry.rejected_at) {
       suspiciousParts.push(`RECUSADO: ${entry.rejection_reason ?? ""}`);
