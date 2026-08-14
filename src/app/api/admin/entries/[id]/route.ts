@@ -16,7 +16,8 @@ const TYPE_LABEL: Record<EntryType, string> = {
 
 // Editar um registo:
 // - worksite_id: atribuir/limpar a obra à mão (útil nas obras móveis, que
-//   não têm raio); atribuir uma obra limpa o aviso "fora da obra";
+//   não têm raio). Atribuir uma obra é um ato de revisão: limpa o aviso
+//   "fora da obra" e valida o registo; retirá-la desfaz as duas coisas;
 // - time "HH:MM": corrigir a hora (fica sinalizado flags.manual_edit);
 // - reject + reason: recusar com motivo (o funcionário é notificado e
 //   regista de novo); unreject: anular a recusa.
@@ -66,15 +67,21 @@ export async function PATCH(
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
-    // Atribuir uma obra à mão resolve o "fora da obra"; retirá-la repõe o
-    // aviso, para o registo voltar a pedir revisão.
+    // Escolher a obra à mão é o admin a dizer "este registo é válido":
+    // limpa o aviso e valida. Retirá-la repõe o aviso e a validação cai,
+    // para o registo voltar a pedir revisão.
     const flags = { ...(entry.flags as Record<string, unknown>) };
     if (worksiteId) delete flags.out_of_area;
     else if (flags.manual !== true) flags.out_of_area = true;
 
     const { error } = await admin
       .from("time_entries")
-      .update({ worksite_id: worksiteId, flags })
+      .update({
+        worksite_id: worksiteId,
+        flags,
+        validated_at: worksiteId ? new Date().toISOString() : null,
+        validated_by: worksiteId ? session.user.id : null,
+      })
       .eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
