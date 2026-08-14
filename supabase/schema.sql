@@ -292,9 +292,9 @@ begin
 
     if matched_id is not null then
       new.worksite_id := matched_id;
-      -- Obra atribuída ao próprio funcionário e registo sem qualquer aviso
-      -- (GPS preciso, relógio certo, não sincronizado offline) → validado já.
-      if f = '{}'::jsonb and exists (
+      -- Obra atribuída ao funcionário e sem avisos que ponham a hora em
+      -- causa (o GPS impreciso não conta: o registo caiu dentro do raio).
+      if (f - 'low_gps_accuracy') = '{}'::jsonb and exists (
         select 1 from public.employee_worksites ew
         where ew.employee_id = new.employee_id
           and ew.worksite_id = matched_id
