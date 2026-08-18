@@ -206,9 +206,19 @@ export async function GET(request: Request) {
     .select("id")
     .eq("role", "employee")
     .eq("active", true);
+  // Quem está de férias/baixa/falta hoje não é incomodado.
+  const { data: ausentes } = await admin
+    .from("absences")
+    .select("employee_id")
+    .lte("start_date", today)
+    .gte("end_date", today);
+  const ausentesHoje = new Set(
+    ((ausentes ?? []) as { employee_id: string }[]).map((a) => a.employee_id)
+  );
+
   const destinatarios = ((activeEmployees ?? []) as { id: string }[])
     .map((p) => p.id)
-    .filter((id) => subsByUser.has(id));
+    .filter((id) => subsByUser.has(id) && !ausentesHoje.has(id));
 
   // Registos de hoje (os recusados não contam — têm de ser refeitos).
   const { data: entriesData, error: entriesError } = await admin

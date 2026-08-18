@@ -12,6 +12,7 @@ import {
 } from "@/lib/offline";
 import { enablePush, pushSupported } from "@/lib/push";
 import type {
+  AbsenceKind,
   EntryType,
   LunchScheduleDay,
   PendingEntry,
@@ -37,11 +38,13 @@ export default function EmployeeHome({
   initialEntries,
   rejectedToday = [],
   lunchSchedule,
+  absence = null,
 }: {
   profile: Profile;
   initialEntries: TimeEntry[];
   rejectedToday?: { entry_type: EntryType; rejection_reason: string | null }[];
   lunchSchedule: LunchScheduleDay[];
+  absence?: { kind: AbsenceKind; end_date: string } | null;
 }) {
   // Data/dia calculados no cliente: quando a página vem do cache offline,
   // o "hoje" do servidor pode estar desatualizado.
@@ -463,6 +466,24 @@ export default function EmployeeHome({
         </div>
         <LogoutButton label={t.home.logout} />
       </header>
+
+      {absence && (
+        <div className="mb-5 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+          <p className="font-semibold text-sky-800">
+            🏖️ {t.home.absentToday.replace("{tipo}", t.absences.kinds[absence.kind].toLowerCase())}
+            {absence.end_date !== today && (
+              <>
+                {" "}
+                {t.home.absentUntil.replace(
+                  "{data}",
+                  formatDate(absence.end_date, "pt-PT")
+                )}
+              </>
+            )}
+          </p>
+          <p className="mt-1 text-sm text-sky-700">{t.home.absentStillPunch}</p>
+        </div>
+      )}
 
       {rejectedToday.map((rej, i) => {
         // Só mostra o aviso enquanto o registo não foi refeito.

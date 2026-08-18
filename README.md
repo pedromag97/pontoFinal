@@ -16,6 +16,12 @@ França), com painel de gestão em Portugal. **Toda a app está em português**
   funcionário e por mês, se os sábados são apontados na folha (por defeito não;
   os registos ficam sempre no sistema). Migração:
   `supabase/migrations/2026-08-12_folha_presenca.sql`.
+- **Ausências:** Gestão → Ausências marca férias, baixa médica ou falta
+  justificada, num dia único ou num intervalo (a base de dados recusa
+  períodos sobrepostos no mesmo funcionário). Nesses dias o funcionário não
+  recebe lembretes, vê um aviso na app (podendo registar na mesma, se
+  afinal trabalhar) e a folha de presença marca os dias.
+  Migração: `supabase/migrations/2026-08-14_ausencias.sql`.
 - **Painel de gestão:** funcionários, registos com foto/mapa/flags de fraude,
   horário de almoço por dia da semana, exportação CSV/Excel com horas
   trabalhadas (almoço descontado), resumo mensal, retenção RGPD.

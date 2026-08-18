@@ -41,6 +41,7 @@ export default async function AdminLayout({
               </MenuLink>
               <MenuLink href="/admin/obras">🏗 {t.nav.worksites}</MenuLink>
               <MenuLink href="/admin/feriados">📅 {t.nav.holidays}</MenuLink>
+              <MenuLink href="/admin/ausencias">🏖️ {t.nav.absences}</MenuLink>
               <MenuLink href="/admin/almoco">🍽️ {t.nav.lunch}</MenuLink>
               <MenuLink href="/admin/rgpd">🔒 {t.nav.privacy}</MenuLink>
             </NavDropdown>

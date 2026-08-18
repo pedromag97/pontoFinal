@@ -75,6 +75,31 @@ export async function GET(request: Request) {
     [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
   // Feriados do mês (geridos na página Feriados do painel).
+  const KIND_LABEL: Record<string, string> = {
+    ferias: "FÉRIAS",
+    baixa: "BAIXA MÉDICA",
+    falta: "FALTA JUSTIFICADA",
+  };
+  const { data: absenceRows } = await supabase
+    .from("absences")
+    .select("kind, start_date, end_date")
+    .eq("employee_id", employeeId)
+    .lte("start_date", to)
+    .gte("end_date", from);
+  const absencesByDay: Record<number, string> = {};
+  for (const row of absenceRows ?? []) {
+    // marcar todos os dias do intervalo que caem dentro do mês pedido
+    const inicio = (row.start_date as string) > from ? (row.start_date as string) : from;
+    const fim = (row.end_date as string) < to ? (row.end_date as string) : to;
+    for (
+      let d = new Date(`${inicio}T12:00:00Z`);
+      d <= new Date(`${fim}T12:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + 1)
+    ) {
+      absencesByDay[d.getUTCDate()] = KIND_LABEL[row.kind as string] ?? "AUSENTE";
+    }
+  }
+
   const { data: holidayRows } = await supabase
     .from("holidays")
     .select("holiday_date, name")
@@ -117,6 +142,7 @@ export async function GET(request: Request) {
     entries: entryList,
     includeSaturdays: setting?.include_saturdays ?? false,
     holidaysByDay,
+    absencesByDay,
     localityByDay,
   });
 

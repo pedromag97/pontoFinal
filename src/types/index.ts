@@ -39,6 +39,22 @@ export interface TimeEntry {
   flags: Record<string, boolean>;
 }
 
+export type AbsenceKind = "ferias" | "baixa" | "falta";
+
+export interface Absence {
+  id: string;
+  employee_id: string;
+  kind: AbsenceKind;
+  start_date: string;
+  end_date: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface AbsenceWithName extends Absence {
+  profiles: { full_name: string } | null;
+}
+
 export interface Holiday {
   holiday_date: string;
   name: string;

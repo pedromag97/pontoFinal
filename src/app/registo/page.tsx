@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n";
 import { todayWorksite } from "@/lib/format";
-import type { LunchScheduleDay, TimeEntry } from "@/types";
+import type { AbsenceKind, LunchScheduleDay, TimeEntry } from "@/types";
 import EmployeeHome from "@/components/employee/EmployeeHome";
 import LogoutButton from "@/components/LogoutButton";
 
@@ -49,6 +49,15 @@ export default async function PointagePage() {
     .not("rejected_at", "is", null)
     .order("created_at");
 
+  // Está de férias/baixa/falta hoje?
+  const { data: ausencia } = await supabase
+    .from("absences")
+    .select("kind, end_date")
+    .eq("employee_id", profile.id)
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .maybeSingle();
+
   // Horário de almoço completo (7 dias): o cliente escolhe o dia certo,
   // mesmo quando a página é servida do cache offline no dia seguinte.
   const { data: schedule } = await supabase
@@ -64,6 +73,9 @@ export default async function PointagePage() {
         (rejected ?? []) as { entry_type: TimeEntry["entry_type"]; rejection_reason: string | null }[]
       }
       lunchSchedule={(schedule ?? []) as LunchScheduleDay[]}
+      absence={
+        (ausencia as { kind: AbsenceKind; end_date: string } | null) ?? null
+      }
     />
   );
 }

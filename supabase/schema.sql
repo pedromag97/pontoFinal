@@ -141,6 +141,31 @@ insert into public.holidays (holiday_date, name) values
   ('2027-12-25', 'Natal')
 on conflict (holiday_date) do nothing;
 
+-- Ausências: férias, baixa ou falta justificada, de um dia ou intervalo.
+create table public.absences (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  kind text not null default 'ferias'
+    check (kind in ('ferias', 'baixa', 'falta')),
+  start_date date not null,
+  end_date date not null,
+  note text,
+  created_at timestamptz not null default now(),
+  created_by uuid references public.profiles (id) on delete set null,
+  constraint absences_intervalo_valido check (end_date >= start_date)
+);
+
+create index absences_employee_idx
+  on public.absences (employee_id, start_date, end_date);
+
+-- Sem períodos sobrepostos para o mesmo funcionário.
+create extension if not exists btree_gist;
+alter table public.absences add constraint absences_sem_sobreposicao
+  exclude using gist (
+    employee_id with =,
+    daterange(start_date, end_date, '[]') with &&
+  );
+
 -- Cache de geocodificação (GPS → concelho) usada na folha de presença.
 -- Só o servidor lê/escreve (service role) — sem políticas.
 create table public.geocode_cache (
@@ -337,6 +362,19 @@ alter table public.worksites enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.reminders_sent enable row level security;
 alter table public.employee_worksites enable row level security;
+alter table public.absences enable row level security;
+
+-- absences: cada um vê as suas; só admins gerem.
+create policy "absences_select"
+  on public.absences for select to authenticated
+  using (employee_id = auth.uid() or public.is_admin());
+create policy "absences_insert_admin"
+  on public.absences for insert to authenticated with check (public.is_admin());
+create policy "absences_update_admin"
+  on public.absences for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+create policy "absences_delete_admin"
+  on public.absences for delete to authenticated using (public.is_admin());
 alter table public.holidays enable row level security;
 
 -- employee_worksites: cada um vê as suas obras; só admins atribuem.
