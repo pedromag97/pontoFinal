@@ -129,7 +129,7 @@ export default function CameraCapture({
             <button
               onClick={takePhoto}
               disabled={!ready}
-              className="w-full rounded-2xl bg-teal-700 py-4 text-lg font-bold text-white active:bg-teal-800 disabled:opacity-50"
+              className="w-full rounded-2xl bg-marca-700 py-4 text-lg font-bold text-white active:bg-marca-800 disabled:opacity-50"
             >
               📸 {t.capture.take}
             </button>
@@ -146,7 +146,7 @@ export default function CameraCapture({
           <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-center text-sm text-amber-800">
             {t.capture.cameraError}
           </p>
-          <label className="block w-full cursor-pointer rounded-2xl bg-teal-700 py-4 text-center text-lg font-bold text-white active:bg-teal-800">
+          <label className="block w-full cursor-pointer rounded-2xl bg-marca-700 py-4 text-center text-lg font-bold text-white active:bg-marca-800">
             📸 {t.capture.fallbackButton}
             <input
               type="file"

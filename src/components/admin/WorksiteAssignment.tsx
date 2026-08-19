@@ -123,7 +123,7 @@ export default function WorksiteAssignment({
                     checked={selecionadas.has(w.id)}
                     disabled={busy === w.id}
                     onChange={() => toggle(w.id)}
-                    className="h-4 w-4 shrink-0 accent-teal-700"
+                    className="h-4 w-4 shrink-0 accent-marca-700"
                   />
                   <span className={w.active ? "" : "text-slate-400 line-through"}>
                     {w.name}
@@ -141,7 +141,7 @@ export default function WorksiteAssignment({
               <button
                 type="button"
                 onClick={() => setAberto(false)}
-                className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+                className="rounded-xl bg-marca-700 px-4 py-2 text-sm font-semibold text-white hover:bg-marca-800"
               >
                 {t.worksites.close}
               </button>

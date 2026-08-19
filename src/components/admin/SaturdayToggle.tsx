@@ -33,7 +33,7 @@ export default function SaturdayToggle({
       disabled={busy}
       className={`rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-50 ${
         on
-          ? "bg-teal-700 text-white"
+          ? "bg-marca-700 text-white"
           : "bg-slate-200 text-slate-600 hover:bg-slate-300"
       }`}
     >

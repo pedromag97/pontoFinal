@@ -234,14 +234,14 @@ export default function WorksiteManager({
               type="checkbox"
               checked={mobile}
               onChange={(e) => setMobile(e.target.checked)}
-              className="h-4 w-4 accent-teal-700"
+              className="h-4 w-4 accent-marca-700"
             />
             ⇄ {t.worksites.mobile}
           </label>
           <button
             type="submit"
             disabled={creating}
-            className="rounded-lg bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+            className="rounded-lg bg-marca-700 px-5 py-2 text-sm font-semibold text-white hover:bg-marca-800 disabled:opacity-60"
           >
             {creating ? t.worksites.creating : t.worksites.create}
           </button>
@@ -298,7 +298,7 @@ export default function WorksiteManager({
                           onChange={(e) =>
                             setEditing({ ...editing, name: e.target.value })
                           }
-                          className="w-full min-w-40 rounded-lg border border-teal-500 px-2 py-1.5 text-sm"
+                          className="w-full min-w-40 rounded-lg border border-marca-400 px-2 py-1.5 text-sm"
                         />
                       </td>
                       <td className="px-4 py-2">
@@ -312,7 +312,7 @@ export default function WorksiteManager({
                                 mobile: e.target.checked,
                               })
                             }
-                            className="h-3.5 w-3.5 accent-teal-700"
+                            className="h-3.5 w-3.5 accent-marca-700"
                           />
                           ⇄ {t.worksites.mobileBadge}
                         </label>
@@ -323,7 +323,7 @@ export default function WorksiteManager({
                             setEditing({ ...editing, coords: e.target.value })
                           }
                           placeholder={t.worksites.coords}
-                          className="w-full min-w-44 rounded-lg border border-teal-500 px-2 py-1.5 font-mono text-xs"
+                          className="w-full min-w-44 rounded-lg border border-marca-400 px-2 py-1.5 font-mono text-xs"
                         />
                         )}
                       </td>
@@ -336,7 +336,7 @@ export default function WorksiteManager({
                           onChange={(e) =>
                             setEditing({ ...editing, radius: e.target.value })
                           }
-                          className="w-24 rounded-lg border border-teal-500 px-2 py-1.5 text-right text-sm"
+                          className="w-24 rounded-lg border border-marca-400 px-2 py-1.5 text-right text-sm"
                         />
                       </td>
                       <td className="px-4 py-2">
@@ -357,7 +357,7 @@ export default function WorksiteManager({
                           <button
                             onClick={saveEdit}
                             disabled={busy}
-                            className="rounded-lg bg-teal-700 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+                            className="rounded-lg bg-marca-700 px-3 py-1 text-xs font-semibold text-white hover:bg-marca-800 disabled:opacity-50"
                           >
                             {t.worksites.save}
                           </button>
@@ -386,7 +386,7 @@ export default function WorksiteManager({
                             href={mapsUrl(site.latitude, site.longitude)}
                             target="_blank"
                             rel="noreferrer"
-                            className="font-mono text-xs text-teal-700 underline"
+                            className="font-mono text-xs text-marca-700 underline"
                           >
                             🗺 {site.latitude.toFixed(5)},{" "}
                             {site.longitude.toFixed(5)}

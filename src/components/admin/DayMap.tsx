@@ -133,7 +133,7 @@ export default function DayMap({
           </span>
         ))}
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full border-2 border-teal-700 bg-teal-700/10" />
+          <span className="inline-block h-3 w-3 rounded-full border-2 border-marca-700 bg-marca-700/10" />
           {t.map.worksiteLegend}
         </span>
         <span>({t.map.flaggedLegend})</span>

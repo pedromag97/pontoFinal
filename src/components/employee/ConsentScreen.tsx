@@ -64,7 +64,7 @@ export default function ConsentScreen({
         <button
           onClick={accept}
           disabled={saving}
-          className="w-full rounded-2xl bg-teal-700 py-4 text-lg font-bold text-white active:bg-teal-800 disabled:opacity-60"
+          className="w-full rounded-2xl bg-marca-700 py-4 text-lg font-bold text-white active:bg-marca-800 disabled:opacity-60"
         >
           {t.consent.accept}
         </button>

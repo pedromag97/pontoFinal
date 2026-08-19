@@ -239,7 +239,7 @@ export default function AddEntryForm({ employees }: { employees: Profile[] }) {
                       onChange={(e) =>
                         setHoras((h) => ({ ...h, [tipo]: e.target.value }))
                       }
-                      className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                      className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                     />
                   </>
                 )}
@@ -265,7 +265,7 @@ export default function AddEntryForm({ employees }: { employees: Profile[] }) {
         <button
           type="submit"
           disabled={busy || !employeeId}
-          className="rounded-xl bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+          className="rounded-xl bg-marca-700 px-5 py-2 text-sm font-semibold text-white hover:bg-marca-800 disabled:opacity-50"
         >
           {busy ? t.entries.adding : t.entries.addButton}
         </button>

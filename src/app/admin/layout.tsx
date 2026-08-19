@@ -28,7 +28,7 @@ export default async function AdminLayout({
           Gestão não ficar escondido atrás do mapa */}
       <header className="relative z-[1100] border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-          <span className="text-lg font-bold text-teal-800">
+          <span className="text-lg font-bold text-marca-800">
             📍 {t.app.name}
           </span>
           <nav className="flex gap-1 text-sm font-medium">

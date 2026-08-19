@@ -151,7 +151,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                   value={valor}
                   placeholder={estado.placeholder}
                   onChange={(e) => setValor(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
                 />
               </div>
             )}
@@ -173,7 +173,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                 className={`rounded-xl px-4 py-2 text-sm font-semibold text-white ${
                   perigo
                     ? "bg-red-600 hover:bg-red-700"
-                    : "bg-teal-700 hover:bg-teal-800"
+                    : "bg-marca-700 hover:bg-marca-800"
                 }`}
               >
                 {estado.confirmLabel ?? "Confirmar"}

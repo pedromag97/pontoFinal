@@ -228,7 +228,7 @@ export default function AbsenceManager({
           <button
             type="submit"
             disabled={busy}
-            className="rounded-xl bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+            className="rounded-xl bg-marca-700 px-5 py-2 text-sm font-semibold text-white hover:bg-marca-800 disabled:opacity-60"
           >
             {busy ? t.absences.adding : t.absences.add}
           </button>

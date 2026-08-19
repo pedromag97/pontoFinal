@@ -36,7 +36,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-700 text-3xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-marca-700 text-3xl">
             📍
           </div>
           <h1 className="text-2xl font-bold">{t.login.title}</h1>
@@ -61,7 +61,7 @@ export default function LoginPage() {
               placeholder={t.login.emailHint}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none placeholder:text-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none placeholder:text-slate-300 focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
             />
           </div>
           <div>
@@ -78,7 +78,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20"
             />
           </div>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-teal-700 py-3.5 text-base font-semibold text-white active:bg-teal-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-marca-700 py-3.5 text-base font-semibold text-white active:bg-marca-800 disabled:opacity-60"
           >
             {loading ? t.login.loading : t.login.submit}
           </button>

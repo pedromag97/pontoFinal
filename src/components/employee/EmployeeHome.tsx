@@ -369,7 +369,7 @@ export default function EmployeeHome({
           <button
             onClick={confirmEntry}
             disabled={!position || sending}
-            className="w-full rounded-2xl bg-teal-700 py-4 text-lg font-bold text-white active:bg-teal-800 disabled:opacity-50"
+            className="w-full rounded-2xl bg-marca-700 py-4 text-lg font-bold text-white active:bg-marca-800 disabled:opacity-50"
           >
             {sending
               ? t.preview.sending
@@ -422,7 +422,7 @@ export default function EmployeeHome({
         )}
         <button
           onClick={() => setStep("home")}
-          className="mt-8 w-full rounded-2xl bg-teal-700 py-4 text-lg font-bold text-white active:bg-teal-800"
+          className="mt-8 w-full rounded-2xl bg-marca-700 py-4 text-lg font-bold text-white active:bg-marca-800"
         >
           {t.success.back}
         </button>
@@ -515,7 +515,7 @@ export default function EmployeeHome({
           <div className="flex gap-2">
             <button
               onClick={handleEnablePush}
-              className="flex-1 rounded-xl bg-teal-700 py-2.5 text-sm font-semibold text-white active:bg-teal-800"
+              className="flex-1 rounded-xl bg-marca-700 py-2.5 text-sm font-semibold text-white active:bg-marca-800"
             >
               {t.home.pushEnable}
             </button>
@@ -591,7 +591,7 @@ export default function EmployeeHome({
 
       <a
         href="/registo/folha"
-        className="mb-5 block rounded-2xl bg-white py-3 text-center text-sm font-semibold text-teal-700 shadow-sm active:bg-slate-50"
+        className="mb-5 block rounded-2xl bg-white py-3 text-center text-sm font-semibold text-marca-700 shadow-sm active:bg-slate-50"
       >
         📅 {t.home.monthSheet} →
       </a>
@@ -601,6 +601,7 @@ export default function EmployeeHome({
           <BigButton
             label={t.home.actions[nextType]}
             emoji={t.home.actionEmojis[nextType]}
+            iniciar={nextType === "entrada" || nextType === "volta_almoco"}
             onClick={() => startFlow(nextType)}
           />
         ) : (
@@ -652,16 +653,23 @@ function StatusCard({
 function BigButton({
   label,
   emoji,
+  iniciar = false,
   onClick,
 }: {
   label: string;
   emoji: string;
+  /** Começar trabalho (entrada/regresso) é laranja; terminar é azul. */
+  iniciar?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-3xl bg-teal-700 py-8 text-xl font-bold text-white shadow-lg shadow-teal-700/20 active:bg-teal-800"
+      className={`w-full rounded-3xl py-8 text-xl font-bold text-white shadow-lg ${
+        iniciar
+          ? "bg-cta shadow-cta/20 active:bg-cta-escuro"
+          : "bg-marca-700 shadow-marca-700/20 active:bg-marca-800"
+      }`}
     >
       <span className="mb-1 block text-4xl">{emoji}</span>
       {label}

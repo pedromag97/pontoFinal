@@ -167,7 +167,7 @@ export default async function RegistosPage({
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-semibold text-white hover:bg-marca-800"
         >
           {t.entries.filter}
         </button>
@@ -312,7 +312,7 @@ export default async function RegistosPage({
                         href={mapsUrl(entry.latitude, entry.longitude)}
                         target="_blank"
                         rel="noreferrer"
-                        className={`font-mono text-xs underline ${lowGps ? "font-semibold text-amber-700" : "text-teal-700"}`}
+                        className={`font-mono text-xs underline ${lowGps ? "font-semibold text-amber-700" : "text-marca-700"}`}
                         title={`${entry.latitude}, ${entry.longitude} — ${t.entries.openMap}`}
                       >
                         🗺

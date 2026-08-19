@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* Sistema de design LSC — azul do logo LusoCabo (#009ffb) escurecido para
+   ações, laranja Lousacabo (#ff6600 -> #f25c00) para começar trabalho.
+   Partilhado com a Gestão LSC (gestao.lusocabo.com). */
+@theme {
+  --color-marca-50: #f0f9ff;
+  --color-marca-100: #dcf1fe;
+  --color-marca-200: #b6e2fd;
+  --color-marca-400: #009ffb;
+  --color-marca-600: #0072bd;
+  --color-marca-700: #005e9c;
+  --color-marca-800: #004a7c;
+  --color-cta: #f25c00;
+  --color-cta-escuro: #d14e00;
+}
+
 :root {
   color-scheme: light;
 }

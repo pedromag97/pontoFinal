@@ -108,13 +108,13 @@ export default async function FolhaPage({
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             {t.sheet.daysWorked}
           </p>
-          <p className="mt-1 text-2xl font-bold text-teal-700">{totalDays}</p>
+          <p className="mt-1 text-2xl font-bold text-marca-700">{totalDays}</p>
         </div>
         <div className="rounded-2xl bg-white p-4 text-center shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             {t.sheet.totalHours}
           </p>
-          <p className="mt-1 text-2xl font-bold text-teal-700">
+          <p className="mt-1 text-2xl font-bold text-marca-700">
             {totalHours > 0
               ? totalHours.toFixed(2).replace(".", ",")
               : "—"}
@@ -124,7 +124,7 @@ export default async function FolhaPage({
 
       <a
         href={`/api/sheet?m=${month}`}
-        className="mb-4 block rounded-2xl bg-teal-700 py-3.5 text-center text-sm font-bold text-white active:bg-teal-800"
+        className="mb-4 block rounded-2xl bg-marca-700 py-3.5 text-center text-sm font-bold text-white active:bg-marca-800"
       >
         ⬇ {t.sheet.download}
       </a>
@@ -148,7 +148,7 @@ export default async function FolhaPage({
                     {formatDateShort(date)}
                   </span>
                   {hours !== null && (
-                    <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-sm font-bold text-teal-700">
+                    <span className="rounded-full bg-marca-50 px-2.5 py-0.5 text-sm font-bold text-marca-700">
                       {hours.toFixed(2).replace(".", ",")} {t.sheet.hoursShort}
                     </span>
                   )}

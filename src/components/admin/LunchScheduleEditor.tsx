@@ -59,7 +59,7 @@ export default function LunchScheduleEditor({
               disabled={busy}
               className={`rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-50 ${
                 on
-                  ? "border-teal-700 bg-teal-700 text-white"
+                  ? "border-marca-700 bg-marca-700 text-white"
                   : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
