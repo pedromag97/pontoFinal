@@ -36,8 +36,9 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-marca-700 text-3xl">
-            📍
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element -- símbolo do grupo, asset estático */}
+            <img src="/simbolo-lsc.png" alt="" className="h-11 w-11 object-contain" />
           </div>
           <h1 className="text-2xl font-bold">{t.login.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{t.login.subtitle}</p>
