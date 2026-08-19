@@ -13,6 +13,11 @@
 -- deixam de poder ser inseridos diretamente pelo cliente: passam todos
 -- pelo servidor (/api/registo/entry), que confirma a assinatura, o desafio
 -- e a presença (ou não) da foto.
+--
+-- ORDEM: correr este ficheiro ANTES do deploy (só acrescenta tabelas, não
+-- mexe em nada do que já funciona) e o 2026-08-14_impressao_digital_fechar.sql
+-- DEPOIS do deploy estar no ar. Ao contrário, ficava um intervalo em que
+-- ninguém conseguia picar.
 
 -- 1. Chaves públicas dos telemóveis registados (nada de biometria aqui).
 create table if not exists public.webauthn_credentials (
@@ -62,7 +67,6 @@ create index if not exists punch_challenges_employee_idx
 -- Só o servidor lê/escreve — sem políticas para authenticated.
 alter table public.punch_challenges enable row level security;
 
--- 3. Fechar a inserção direta de registos pelo cliente.
---    Sem isto a política acima seria só uma sugestão: bastava um cliente
---    manipulado inserir na tabela sem passar pelo servidor.
-drop policy if exists "entries_insert_own_active" on public.time_entries;
+-- O passo 3 (fechar a inserção direta de registos pelo cliente) está no
+-- ficheiro 2026-08-14_impressao_digital_fechar.sql, para correr depois do
+-- deploy.
