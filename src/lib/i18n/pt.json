@@ -28,6 +28,12 @@
     "absentToday": "Estás de {tipo} hoje",
     "absentUntil": "até {data}",
     "absentStillPunch": "Se afinal trabalhares, podes registar na mesma.",
+    "enrollTitle": "Registar este telemóvel?",
+    "enrollBody": "Passas a picar o ponto com a tua impressão digital, sem tirar selfie de cada vez. A digital nunca sai do telemóvel — a empresa não a recebe nem guarda.",
+    "enrollButton": "Registar com impressão digital",
+    "enrollLater": "Agora não",
+    "enrollDone": "Telemóvel registado ✅",
+    "enrollError": "Não foi possível registar este telemóvel. Confirma que tens desbloqueio por digital ou código ativo.",
     "pushTitle": "Ativar lembretes?",
     "pushBody": "Recebes uma notificação se te esqueceres de registar a volta do almoço ou a saída.",
     "pushEnable": "Ativar",
@@ -92,7 +98,12 @@
     "cancel": "Cancelar",
     "cameraError": "Não foi possível abrir a câmara. Usa o botão abaixo.",
     "fallbackButton": "Tirar selfie com a câmara",
-    "gettingLocation": "A obter a tua posição GPS…"
+    "gettingLocation": "A obter a tua posição GPS…",
+    "reasons": {
+      "sem_dispositivo": "Ainda não registaste este telemóvel — por isso é preciso selfie.",
+      "fora_de_obra": "Estás fora das obras conhecidas — a selfie confirma onde estás.",
+      "amostragem": "Verificação por amostragem: desta vez é preciso selfie."
+    }
   },
   "preview": {
     "title": "Confirma antes de enviar",
@@ -106,7 +117,10 @@
     "retryLocation": "Tentar localização de novo",
     "confirm": "Confirmar registo",
     "retake": "Repetir fotografia",
-    "sending": "A enviar…"
+    "sending": "A enviar…",
+    "preparing": "A preparar o registo…",
+    "fingerprintNote": "Ao confirmar, vai ser pedida a tua impressão digital.",
+    "noPhotoNeeded": "Sem selfie desta vez — estás dentro da obra e o telemóvel está registado."
   },
   "success": {
     "registered": {
@@ -122,7 +136,8 @@
     "duplicate": "Este registo já foi feito hoje.",
     "network": "Erro de rede. Verifica a ligação e tenta de novo.",
     "upload": "Falha no envio da fotografia. Tenta de novo.",
-    "generic": "Ocorreu um erro. Tenta de novo."
+    "generic": "Ocorreu um erro. Tenta de novo.",
+    "fingerprint": "Confirmação por impressão digital cancelada ou falhada."
   },
   "nav": {
     "dashboard": "Resumo",
@@ -335,6 +350,11 @@
     "worksitesCount": "obras",
     "worksitesHint": "Registos feitos dentro de uma obra atribuída (e sem avisos) ficam validados automaticamente.",
     "worksitesEmpty": "Ainda não há obras criadas.",
+    "device": "Telemóvel",
+    "deviceYes": "registado",
+    "deviceNo": "por registar",
+    "deviceReset": "Remover telemóvel",
+    "deviceResetConfirm": "Remover o telemóvel registado deste funcionário? Ele terá de registar outro na app — até lá, os registos voltam a exigir selfie.",
     "usernameInvalid": "Username inválido: 3–30 caracteres, minúsculas, números, ponto, hífen ou underscore.",
     "password": "Password inicial",
     "create": "Criar conta",

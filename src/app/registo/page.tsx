@@ -58,6 +58,12 @@ export default async function PointagePage() {
     .gte("end_date", today)
     .maybeSingle();
 
+  // Já registou o telemóvel (impressão digital)?
+  const { count: credenciais } = await supabase
+    .from("webauthn_credentials")
+    .select("id", { count: "exact", head: true })
+    .eq("employee_id", profile.id);
+
   // Horário de almoço completo (7 dias): o cliente escolhe o dia certo,
   // mesmo quando a página é servida do cache offline no dia seguinte.
   const { data: schedule } = await supabase
@@ -73,6 +79,7 @@ export default async function PointagePage() {
         (rejected ?? []) as { entry_type: TimeEntry["entry_type"]; rejection_reason: string | null }[]
       }
       lunchSchedule={(schedule ?? []) as LunchScheduleDay[]}
+      hasCredential={(credenciais ?? 0) > 0}
       absence={
         (ausencia as { kind: AbsenceKind; end_date: string } | null) ?? null
       }

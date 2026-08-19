@@ -11,10 +11,12 @@ const t = getDictionary("pt");
 // fallback não deixa escolher uma foto da galeria em todos os dispositivos.
 export default function CameraCapture({
   title,
+  reason,
   onCapture,
   onCancel,
 }: {
   title: string;
+  reason?: string;
   onCapture: (blob: Blob, dataUrl: string) => void;
   onCancel: () => void;
 }) {
@@ -103,7 +105,10 @@ export default function CameraCapture({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col p-4">
-      <h1 className="mb-3 text-center text-lg font-bold">{title}</h1>
+      <h1 className="mb-1 text-center text-lg font-bold">{title}</h1>
+      {reason && (
+        <p className="mb-3 text-center text-xs text-slate-500">{reason}</p>
+      )}
 
       {!cameraFailed ? (
         <>

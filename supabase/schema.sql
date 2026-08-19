@@ -196,6 +196,39 @@ create table public.reminders_sent (
 -- NOTA: o agendamento dos lembretes (pg_cron → /api/cron/reminders) está em
 -- supabase/migrations/2026-08-11_lembretes.sql, parte 2 — requer o CRON_SECRET.
 
+-- Telemóveis registados para picar por impressão digital (WebAuthn).
+-- A digital nunca sai do aparelho: aqui só fica a chave pública que
+-- valida as assinaturas. Não há dados biométricos na base de dados.
+create table public.webauthn_credentials (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  credential_id text not null unique,
+  public_key text not null,
+  counter bigint not null default 0,
+  device_label text,
+  created_at timestamptz not null default now(),
+  last_used_at timestamptz
+);
+
+create index webauthn_credentials_employee_idx
+  on public.webauthn_credentials (employee_id);
+
+-- Desafios de cada picagem: ligam o pedido (movimento, local) à resposta
+-- assinada e guardam se a selfie era exigida desta vez. Uso único.
+create table public.punch_challenges (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  challenge text not null,
+  entry_type text not null,
+  requires_photo boolean not null,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index punch_challenges_employee_idx
+  on public.punch_challenges (employee_id, expires_at);
+
 -- ------------------------------------------------------------
 -- 2. FUNÇÕES E TRIGGERS
 -- ------------------------------------------------------------
@@ -363,6 +396,19 @@ alter table public.push_subscriptions enable row level security;
 alter table public.reminders_sent enable row level security;
 alter table public.employee_worksites enable row level security;
 alter table public.absences enable row level security;
+alter table public.webauthn_credentials enable row level security;
+-- punch_challenges: só o servidor lê/escreve — RLS ligada e sem políticas.
+alter table public.punch_challenges enable row level security;
+
+-- webauthn_credentials: cada um vê e remove os seus dispositivos; admins
+-- veem e removem todos (troca de telemóvel). A escrita é do servidor.
+create policy "webauthn_select"
+  on public.webauthn_credentials for select to authenticated
+  using (employee_id = auth.uid() or public.is_admin());
+
+create policy "webauthn_delete"
+  on public.webauthn_credentials for delete to authenticated
+  using (employee_id = auth.uid() or public.is_admin());
 
 -- absences: cada um vê as suas; só admins gerem.
 create policy "absences_select"
@@ -456,13 +502,10 @@ create policy "profiles_update_self"
 revoke update on public.profiles from authenticated;
 grant update (preferred_language, consent_given_at) on public.profiles to authenticated;
 
--- time_entries: funcionário ativo insere apenas registos seus.
-create policy "entries_insert_own_active"
-  on public.time_entries for insert to authenticated
-  with check (
-    employee_id = auth.uid()
-    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.active)
-  );
+-- time_entries: sem política de INSERT para authenticated — os registos são
+-- criados exclusivamente pelo servidor (/api/registo/entry, service role),
+-- que confirma o desafio, a assinatura do telemóvel e a foto quando exigida.
+-- Sem isto a política de selfie seria só uma sugestão à app.
 
 -- time_entries: cada um lê os seus; admins leem todos.
 create policy "entries_select_own_or_admin"

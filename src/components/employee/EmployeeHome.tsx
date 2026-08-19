@@ -11,6 +11,10 @@ import {
   syncPending,
 } from "@/lib/offline";
 import { enablePush, pushSupported } from "@/lib/push";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import type {
+  PublicKeyCredentialRequestOptionsJSON,
+} from "@simplewebauthn/browser";
 import type {
   AbsenceKind,
   EntryType,
@@ -25,7 +29,16 @@ import LogoutButton from "@/components/LogoutButton";
 
 const t = getDictionary("pt");
 
-type Step = "home" | "capture" | "preview" | "success";
+type Step = "home" | "preparing" | "capture" | "preview" | "success";
+
+// O que o servidor decidiu para esta picagem: se pede selfie e, quando o
+// telemóvel está registado, o desafio a assinar com a impressão digital.
+interface Desafio {
+  challengeId: string | null;
+  requiresPhoto: boolean;
+  motivo?: string;
+  options: PublicKeyCredentialRequestOptionsJSON | null;
+}
 
 interface Position {
   latitude: number;
@@ -39,12 +52,14 @@ export default function EmployeeHome({
   rejectedToday = [],
   lunchSchedule,
   absence = null,
+  hasCredential = false,
 }: {
   profile: Profile;
   initialEntries: TimeEntry[];
   rejectedToday?: { entry_type: EntryType; rejection_reason: string | null }[];
   lunchSchedule: LunchScheduleDay[];
   absence?: { kind: AbsenceKind; end_date: string } | null;
+  hasCredential?: boolean;
 }) {
   // Data/dia calculados no cliente: quando a página vem do cache offline,
   // o "hoje" do servidor pode estar desatualizado.
@@ -75,6 +90,39 @@ export default function EmployeeHome({
   const [pushBanner, setPushBanner] = useState<"hidden" | "ask" | "enabled">(
     "hidden"
   );
+  const [desafio, setDesafio] = useState<Desafio | null>(null);
+  const [temCredencial, setTemCredencial] = useState(hasCredential);
+  const [enrollBanner, setEnrollBanner] = useState<
+    "hidden" | "ask" | "done" | "error"
+  >("hidden");
+
+  // Convite para registar o telemóvel (uma vez por aparelho).
+  useEffect(() => {
+    if (temCredencial) return;
+    if (typeof window === "undefined" || !window.PublicKeyCredential) return;
+    if (localStorage.getItem("enroll-dismissed") === "1") return;
+    setEnrollBanner("ask");
+  }, [temCredencial]);
+
+  async function registarDispositivo() {
+    try {
+      const res = await fetch("/api/webauthn/register");
+      if (!res.ok) throw new Error();
+      const options = await res.json();
+      const resposta = await startRegistration({ optionsJSON: options });
+      const guardar = await fetch("/api/webauthn/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resposta, etiqueta: navigator.platform }),
+      });
+      if (!guardar.ok) throw new Error();
+      setTemCredencial(true);
+      setEnrollBanner("done");
+      setTimeout(() => setEnrollBanner("hidden"), 4000);
+    } catch {
+      setEnrollBanner("error");
+    }
+  }
 
   // Lembretes push: mostra o convite quando suportado e ainda não decidido;
   // se a permissão já foi dada, garante silenciosamente que a subscrição existe.
@@ -170,12 +218,88 @@ export default function EmployeeHome({
     );
   }, []);
 
-  function startFlow(type: EntryType) {
+  // O GPS é preciso ANTES de saber se esta picagem leva selfie: é ele que
+  // diz se o funcionário está dentro de uma obra.
+  function obterPosicao(): Promise<Position> {
+    return new Promise((resolve, reject) => {
+      if (!("geolocation" in navigator)) {
+        setGeoError(true);
+        reject(new Error("sem gps"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const p = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: Math.round(pos.coords.accuracy),
+          };
+          setPosition(p);
+          setGeoError(false);
+          resolve(p);
+        },
+        (err) => {
+          setGeoError(true);
+          reject(err);
+        },
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
+      );
+    });
+  }
+
+  // Sem rede (ou sem resposta do servidor) não há desafio possível:
+  // exige-se selfie e o registo segue pela fila offline.
+  const desafioOffline: Desafio = {
+    challengeId: null,
+    requiresPhoto: true,
+    options: null,
+  };
+
+  async function startFlow(type: EntryType) {
     setEntryType(type);
     setPhoto(null);
     setError(null);
-    setStep("capture");
-    requestLocation(); // pedir GPS em paralelo com a câmara
+    setDesafio(null);
+    setPosition(null);
+    setStep("preparing");
+
+    let pos: Position;
+    try {
+      pos = await obterPosicao();
+    } catch {
+      setStep("preview"); // ecrã de erro de GPS, com botão de repetir
+      return;
+    }
+
+    if (!navigator.onLine) {
+      setDesafio(desafioOffline);
+      setStep("capture");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/registo/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entry_type: type,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const dados = (await res.json()) as Desafio;
+      setDesafio(dados);
+      if (dados.requiresPhoto) {
+        setStep("capture");
+      } else {
+        setCaptureTime(new Date());
+        setStep("preview");
+      }
+    } catch {
+      setDesafio(desafioOffline);
+      setStep("capture");
+    }
   }
 
   function onPhotoCaptured(blob: Blob, dataUrl: string) {
@@ -210,68 +334,92 @@ export default function EmployeeHome({
   }
 
   async function confirmEntry() {
-    if (!photo || !position || sending) return;
+    if (!position || sending) return;
+    const precisaFoto = desafio?.requiresPhoto ?? true;
+    if (precisaFoto && !photo) return;
+
     setSending(true);
     setError(null);
     setLastWasOffline(false);
-
     const clientTimestamp = new Date().toISOString();
 
-    // Sem rede à partida? Guarda logo localmente.
-    if (!navigator.onLine) {
+    // Sem rede ou sem desafio válido: fila local (sempre com selfie).
+    if (!navigator.onLine || !desafio?.challengeId) {
       const saved = await saveOffline(clientTimestamp);
       setSending(false);
       if (!saved) setError(t.errors.network);
       return;
     }
 
-    const supabase = createClient();
-    const path = `${profile.id}/${today}_${entryType}_${Date.now()}.jpg`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("selfies")
-      .upload(path, photo.blob, { contentType: "image/jpeg" });
-    if (uploadError) {
-      if (looksOffline(uploadError)) {
-        const saved = await saveOffline(clientTimestamp);
+    // 1. Foto, quando esta picagem a exige.
+    let photoPath: string | null = null;
+    if (photo) {
+      const supabase = createClient();
+      photoPath = `${profile.id}/${today}_${entryType}_${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("selfies")
+        .upload(photoPath, photo.blob, { contentType: "image/jpeg" });
+      if (uploadError) {
+        if (looksOffline(uploadError)) {
+          const saved = await saveOffline(clientTimestamp);
+          setSending(false);
+          if (!saved) setError(t.errors.network);
+          return;
+        }
+        setError(t.errors.upload);
         setSending(false);
-        if (!saved) setError(t.errors.network);
         return;
       }
-      setError(t.errors.upload);
+    }
+
+    // 2. Impressão digital, quando o telemóvel está registado.
+    let assertion = null;
+    if (desafio.options) {
+      try {
+        assertion = await startAuthentication({ optionsJSON: desafio.options });
+      } catch {
+        setError(t.errors.fingerprint);
+        setSending(false);
+        return;
+      }
+    }
+
+    // 3. O servidor confere tudo e cria o registo.
+    let res: Response;
+    try {
+      res = await fetch("/api/registo/entry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challenge_id: desafio.challengeId,
+          entry_type: entryType,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          gps_accuracy: position.accuracy,
+          client_timestamp: clientTimestamp,
+          photo_path: photoPath,
+          assertion,
+        }),
+      });
+    } catch {
+      const saved = await saveOffline(clientTimestamp);
       setSending(false);
+      if (!saved) setError(t.errors.network);
       return;
     }
 
-    const { data, error: insertError } = await supabase
-      .from("time_entries")
-      .insert({
-        employee_id: profile.id,
-        entry_type: entryType,
-        photo_path: path,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        gps_accuracy: position.accuracy,
-        client_timestamp: clientTimestamp,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      if (looksOffline(insertError)) {
-        const saved = await saveOffline(clientTimestamp);
-        setSending(false);
-        if (!saved) setError(t.errors.network);
-        return;
-      }
+    if (!res.ok) {
+      const corpo = await res.json().catch(() => ({}));
       setError(
-        insertError.code === "23505" ? t.errors.duplicate : t.errors.generic
+        res.status === 409
+          ? t.errors.duplicate
+          : (corpo.error ?? t.errors.generic)
       );
       setSending(false);
       return;
     }
 
-    const entry = data as TimeEntry;
+    const { entry } = (await res.json()) as { entry: TimeEntry };
     setEntries((prev) => [...prev, entry]);
     setLastEntry(entry);
     setSending(false);
@@ -288,11 +436,33 @@ export default function EmployeeHome({
     );
   }
 
+  // ---------- a preparar (GPS + decisão do servidor) ----------
+  if (step === "preparing") {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
+        <div className="text-4xl">📍</div>
+        <p className="font-semibold text-slate-700">{t.preview.preparing}</p>
+        <p className="text-sm text-slate-500">{t.capture.gettingLocation}</p>
+        <button
+          onClick={() => setStep("home")}
+          className="mt-4 rounded-2xl border border-slate-300 bg-white px-6 py-2.5 font-semibold text-slate-600"
+        >
+          {t.capture.cancel}
+        </button>
+      </main>
+    );
+  }
+
   // ---------- captura ----------
   if (step === "capture") {
     return (
       <CameraCapture
         title={t.capture.titles[entryType]}
+        reason={
+          desafio?.motivo && desafio.motivo !== "nao_exigida"
+            ? (t.capture.reasons as Record<string, string>)[desafio.motivo]
+            : undefined
+        }
         onCapture={onPhotoCaptured}
         onCancel={() => setStep("home")}
       />
@@ -300,7 +470,7 @@ export default function EmployeeHome({
   }
 
   // ---------- pré-visualização ----------
-  if (step === "preview" && photo) {
+  if (step === "preview") {
     const lowAccuracy = position !== null && position.accuracy > 100;
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col p-4">
@@ -308,11 +478,17 @@ export default function EmployeeHome({
           {t.preview.title}
         </h1>
 
-        <img
-          src={photo.dataUrl}
-          alt="Selfie"
-          className="mb-4 aspect-[3/4] w-full rounded-2xl object-cover shadow-sm"
-        />
+        {photo ? (
+          <img
+            src={photo.dataUrl}
+            alt="Selfie"
+            className="mb-4 aspect-[3/4] w-full rounded-2xl object-cover shadow-sm"
+          />
+        ) : (
+          <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-4 text-center text-sm font-medium text-emerald-800">
+            👍 {t.preview.noPhotoNeeded}
+          </p>
+        )}
 
         <div className="mb-4 space-y-2 rounded-2xl bg-white p-4 text-sm shadow-sm">
           <div className="flex justify-between">
@@ -365,6 +541,12 @@ export default function EmployeeHome({
           </p>
         )}
 
+        {desafio?.options && (
+          <p className="mb-3 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
+            👆 {t.preview.fingerprintNote}
+          </p>
+        )}
+
         <div className="mt-auto space-y-3 pb-2">
           <button
             onClick={confirmEntry}
@@ -378,11 +560,11 @@ export default function EmployeeHome({
                 : t.capture.gettingLocation}
           </button>
           <button
-            onClick={() => startFlow(entryType)}
+            onClick={() => (photo ? setStep("capture") : setStep("home"))}
             disabled={sending}
             className="w-full rounded-2xl border border-slate-300 bg-white py-3.5 font-semibold text-slate-700 active:bg-slate-100"
           >
-            {t.preview.retake}
+            {photo ? t.preview.retake : t.capture.cancel}
           </button>
         </div>
       </main>
@@ -507,6 +689,40 @@ export default function EmployeeHome({
           </div>
         );
       })}
+
+      {enrollBanner === "ask" && (
+        <div className="mb-5 rounded-2xl bg-white p-4 shadow-sm">
+          <p className="font-semibold">👆 {t.home.enrollTitle}</p>
+          <p className="mb-3 mt-1 text-sm text-slate-500">{t.home.enrollBody}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={registarDispositivo}
+              className="flex-1 rounded-xl bg-marca-700 py-2.5 text-sm font-semibold text-white active:bg-marca-800"
+            >
+              {t.home.enrollButton}
+            </button>
+            <button
+              onClick={() => {
+                localStorage.setItem("enroll-dismissed", "1");
+                setEnrollBanner("hidden");
+              }}
+              className="flex-1 rounded-xl border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 active:bg-slate-100"
+            >
+              {t.home.enrollLater}
+            </button>
+          </div>
+        </div>
+      )}
+      {enrollBanner === "done" && (
+        <p className="mb-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          {t.home.enrollDone}
+        </p>
+      )}
+      {enrollBanner === "error" && (
+        <p className="mb-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {t.home.enrollError}
+        </p>
+      )}
 
       {pushBanner === "ask" && (
         <div className="mb-5 rounded-2xl bg-white p-4 shadow-sm">

@@ -80,33 +80,37 @@ export async function syncPending(): Promise<TimeEntry[]> {
       continue; // erro não-rede neste item; tenta os seguintes
     }
 
-    const { data, error: insertError } = await supabase
-      .from("time_entries")
-      .insert({
-        employee_id: item.employee_id,
-        entry_type: item.entry_type,
-        photo_path: path,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        gps_accuracy: item.gps_accuracy,
-        client_timestamp: item.client_timestamp,
-        synced_offline: true,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      if (insertError.code === "23505") {
-        // já existe um registo deste tipo nesse dia — descarta o duplicado
-        await removePending(item.id);
-        continue;
-      }
-      if (looksOffline(insertError)) break;
-      continue;
+    // O registo é criado pelo servidor (o cliente já não insere direto).
+    let res: Response;
+    try {
+      res = await fetch("/api/registo/entry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entry_type: item.entry_type,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          gps_accuracy: item.gps_accuracy,
+          client_timestamp: item.client_timestamp,
+          photo_path: path,
+          synced_offline: true,
+        }),
+      });
+    } catch {
+      break; // sem rede: tenta outra vez mais tarde
     }
 
+    if (!res.ok) {
+      if (res.status === 409) {
+        // já existe um registo deste tipo nesse dia — descarta o duplicado
+        await removePending(item.id);
+      }
+      continue;
+    }
+    const { entry } = (await res.json()) as { entry: TimeEntry };
+
     await removePending(item.id);
-    synced.push(data as TimeEntry);
+    synced.push(entry);
   }
 
   return synced;

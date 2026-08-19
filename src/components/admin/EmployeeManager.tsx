@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 import { formatDateShort } from "@/lib/format";
@@ -14,10 +15,12 @@ export default function EmployeeManager({
   initialProfiles,
   worksites,
   assignedByEmployee,
+  devicesByEmployee,
 }: {
   initialProfiles: Profile[];
   worksites: Worksite[];
   assignedByEmployee: Record<string, string[]>;
+  devicesByEmployee: Record<string, number>;
 }) {
   const router = useRouter();
   const dialogs = useDialogs();
@@ -105,6 +108,30 @@ export default function EmployeeManager({
       return;
     }
     setMessage({ ok: true, text: t.employees.eraseDone });
+    router.refresh();
+  }
+
+  // Troca de telemóvel: remover o registado obriga o funcionário a
+  // registar o novo (e, até lá, os registos voltam a exigir selfie).
+  async function removerDispositivo(profile: Profile) {
+    const ok = await dialogs.confirm({
+      title: `${t.employees.deviceReset} — ${profile.full_name}`,
+      message: t.employees.deviceResetConfirm,
+      confirmLabel: t.employees.deviceReset,
+      danger: true,
+    });
+    if (!ok) return;
+    setBusyId(profile.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("webauthn_credentials")
+      .delete()
+      .eq("employee_id", profile.id);
+    setBusyId(null);
+    if (error) {
+      setMessage({ ok: false, text: t.employees.error });
+      return;
+    }
     router.refresh();
   }
 
@@ -209,6 +236,7 @@ export default function EmployeeManager({
               <th className="px-4 py-3">{t.employees.name}</th>
               <th className="px-4 py-3">{t.employees.loginCol}</th>
               <th className="px-4 py-3">{t.employees.worksites}</th>
+              <th className="px-4 py-3">{t.employees.device}</th>
               <th className="px-4 py-3">{t.employees.consent}</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3 text-right">Ações</th>
@@ -239,6 +267,26 @@ export default function EmployeeManager({
                       worksites={worksites}
                       assigned={assignedByEmployee[profile.id] ?? []}
                     />
+                  ) : (
+                    <span className="text-slate-300">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {profile.role === "employee" ? (
+                    (devicesByEmployee[profile.id] ?? 0) > 0 ? (
+                      <button
+                        onClick={() => removerDispositivo(profile)}
+                        disabled={busyId === profile.id}
+                        title={t.employees.deviceReset}
+                        className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
+                      >
+                        👆 {t.employees.deviceYes}
+                      </button>
+                    ) : (
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
+                        {t.employees.deviceNo}
+                      </span>
+                    )
                   ) : (
                     <span className="text-slate-300">—</span>
                   )}
