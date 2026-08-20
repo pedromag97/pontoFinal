@@ -3,7 +3,9 @@
 // - navegações: rede primeiro; sem rede, serve a última versão em cache da
 //   página (permite abrir a app offline e registar para a fila local),
 //   com offline.html como último recurso.
-const CACHE = "ponto-v3";
+// v4: simbolo proprio do Ponto Final. A subida de versao e o que
+// faz os telemoveis ja instalados largarem o icone antigo em cache.
+const CACHE = "ponto-v4";
 const PRECACHE = [
   "/offline.html",
   "/manifest.json",

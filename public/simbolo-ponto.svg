@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ponto Final">
+  <!-- Símbolo do Ponto Final. Distinto da Gestão LSC (que usa o símbolo do
+       grupo) mas da mesma família: azul Lusocabo #005e9c e o mesmo canto
+       arredondado dos cartões da aplicação.
+       O mostrador marca 8h00, a hora de entrada, e o ponteiro dos minutos
+       fecha no ponto central — o "ponto" que dá nome à aplicação. -->
+  <rect width="512" height="512" rx="112" fill="#005e9c"/>
+  <circle cx="256" cy="256" r="146" fill="none" stroke="#ffffff" stroke-width="28"/>
+  <path d="M256 168 V256 H172" fill="none" stroke="#ffffff" stroke-width="28"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="26" fill="#ff6600"/>
+</svg>
