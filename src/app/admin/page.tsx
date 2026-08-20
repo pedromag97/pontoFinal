@@ -184,6 +184,9 @@ export default async function AdminDashboard({
       </div>
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        {/* O cartao corta nos cantos; a tabela rola por dentro, senao no
+            telemovel as colunas da direita ficavam inacessiveis. */}
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -265,6 +268,7 @@ export default async function AdminDashboard({
             ))}
           </tbody>
         </table>
+        </div>
         {rows.length > 0 && (
           <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3.5">
             <span className="text-[13px] font-semibold text-slate-600">

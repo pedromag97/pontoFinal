@@ -192,7 +192,7 @@ export default async function GrelhaPage({
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 border-b border-slate-200 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="sticky left-0 z-10 border-b border-slate-200 bg-white px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4">
                   {t.dashboard.employee}
                 </th>
                 {dias.map((dia) => (
@@ -223,10 +223,15 @@ export default async function GrelhaPage({
               )}
               {linhas.map((linha) => (
                 <tr key={linha.id}>
-                  <td className="sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-3">
+                  <td className="sticky left-0 z-10 border-b border-slate-100 bg-white px-3 py-3 sm:px-4">
+                    {/* No telemovel a coluna do nome comia metade do
+                        ecra e sobravam 4 dias: o avatar sai e o nome
+                        corta, para dar espaco a grelha. */}
                     <span className="flex items-center gap-2.5">
-                      <Avatar nome={linha.nome} />
-                      <span className="whitespace-nowrap text-sm font-semibold text-slate-900">
+                      <span className="hidden sm:block">
+                        <Avatar nome={linha.nome} />
+                      </span>
+                      <span className="block max-w-24 truncate text-sm font-semibold text-slate-900 sm:max-w-none sm:whitespace-nowrap">
                         {linha.nome}
                       </span>
                     </span>

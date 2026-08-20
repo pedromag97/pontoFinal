@@ -37,7 +37,7 @@ export default async function AdminLayout({
               {t.app.name}
             </span>
           </span>
-          <nav className="flex items-center gap-1 text-sm">
+          <nav className="flex flex-wrap items-center gap-1 text-sm">
             <NavLink href="/admin">{t.nav.dashboard}</NavLink>
             <NavLink href="/admin/grelha">{t.nav.grid}</NavLink>
             <NavLink href="/admin/registos">{t.nav.entries}</NavLink>

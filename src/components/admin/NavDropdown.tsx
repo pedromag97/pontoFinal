@@ -32,7 +32,7 @@ export default function NavDropdown({
         {label} <span className="text-xs">▾</span>
       </summary>
       <div
-        className="absolute left-0 z-20 mt-1 min-w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+        className="absolute right-0 z-20 mt-1 min-w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
         onClick={() => {
           if (ref.current) ref.current.open = false;
         }}
