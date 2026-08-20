@@ -39,6 +39,7 @@ export default async function AdminLayout({
           </span>
           <nav className="flex items-center gap-1 text-sm">
             <NavLink href="/admin">{t.nav.dashboard}</NavLink>
+            <NavLink href="/admin/grelha">{t.nav.grid}</NavLink>
             <NavLink href="/admin/registos">{t.nav.entries}</NavLink>
             <NavLink href="/admin/mapa">{t.nav.map}</NavLink>
             <NavDropdown label={t.nav.management}>

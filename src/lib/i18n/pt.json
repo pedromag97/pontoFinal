@@ -146,10 +146,24 @@
     "generic": "Ocorreu um erro. Tenta de novo.",
     "fingerprint": "Confirmação por impressão digital cancelada ou falhada."
   },
+  "grid": {
+    "title": "Grelha do mês",
+    "subtitle": "Horas de cada funcionário, dia a dia, em {mes}. Serve para ver o mês inteiro de uma vez — quem faltou e que dias ficaram por fechar.",
+    "legendFull": "dia completo",
+    "legendPartial": "incompleto ou por fechar",
+    "legendNone": "sem registo, ausência ou dia não útil",
+    "grandTotal": "Total de todos:",
+    "absenceMark": {
+      "ferias": "F",
+      "baixa": "B",
+      "falta": "A"
+    }
+  },
   "nav": {
     "dashboard": "Resumo",
     "entries": "Registos",
     "map": "Mapa",
+    "grid": "Grelha",
     "management": "Gestão",
     "employees": "Funcionários",
     "worksites": "Obras",
