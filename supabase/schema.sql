@@ -415,15 +415,17 @@ alter table public.webauthn_credentials enable row level security;
 -- punch_challenges: só o servidor lê/escreve — RLS ligada e sem políticas.
 alter table public.punch_challenges enable row level security;
 
--- webauthn_credentials: cada um vê e remove os seus dispositivos; admins
--- veem e removem todos (troca de telemóvel). A escrita é do servidor.
+-- webauthn_credentials: cada um vê o seu aparelho; admins veem todos.
+-- A escrita é do servidor (service role).
 create policy "webauthn_select"
   on public.webauthn_credentials for select to authenticated
   using (employee_id = auth.uid() or public.is_admin());
 
+-- Apagar é só da gestão. Se o próprio pudesse, a regra "uma conta, um
+-- aparelho" não valia nada: bastava apagar e registar noutro telemóvel.
 create policy "webauthn_delete"
   on public.webauthn_credentials for delete to authenticated
-  using (employee_id = auth.uid() or public.is_admin());
+  using (public.is_admin());
 
 -- absences: cada um vê as suas; só admins gerem.
 create policy "absences_select"
