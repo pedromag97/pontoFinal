@@ -12,6 +12,7 @@ export default async function FuncionariosPage() {
     { data: worksites },
     { data: assignments },
     { data: credenciais },
+    { data: pedidosSelfie },
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -21,6 +22,10 @@ export default async function FuncionariosPage() {
       supabase.from("worksites").select("*").order("active", { ascending: false }).order("name"),
       supabase.from("employee_worksites").select("employee_id, worksite_id"),
       supabase.from("webauthn_credentials").select("employee_id, device_type"),
+      supabase
+        .from("selfie_requests")
+        .select("employee_id")
+        .is("consumed_at", null),
     ]);
 
   // Quantos telemóveis registados por funcionário (impressão digital).
@@ -49,6 +54,10 @@ export default async function FuncionariosPage() {
     (assignedByEmployee[row.employee_id] ??= []).push(row.worksite_id);
   }
 
+  const selfiePendente = ((pedidosSelfie ?? []) as { employee_id: string }[]).map(
+    (p) => p.employee_id
+  );
+
   return (
     <EmployeeManager
       initialProfiles={(profiles ?? []) as Profile[]}
@@ -56,6 +65,7 @@ export default async function FuncionariosPage() {
       assignedByEmployee={assignedByEmployee}
       devicesByEmployee={devicesByEmployee}
       syncedByEmployee={syncedByEmployee}
+      selfiePendente={selfiePendente}
     />
   );
 }

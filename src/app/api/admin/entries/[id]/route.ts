@@ -119,6 +119,21 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Recusar é dizer "não acredito neste registo": o que vier a seguir
+    // tem de trazer prova. Sem isto, o registo refeito passava pela
+    // política normal e, dentro da obra, vinha sem foto em 9 de 10 casos.
+    // O índice único é parcial (só sobre os pedidos por consumir), por isso
+    // não dá para usar upsert: insere-se e tolera-se o duplicado, que só
+    // quer dizer que já havia um pedido pendente — esse serve na mesma.
+    const { error: erroPedido } = await admin.from("selfie_requests").insert({
+      employee_id: entry.employee_id as string,
+      requested_by: session.user.id,
+      reason: `Registo recusado: ${reason}`,
+    });
+    if (erroPedido && erroPedido.code !== "23505") {
+      console.error("[recusa] pedido de selfie falhou:", erroPedido.message);
+    }
+
     // Notificar o funcionário para registar de novo (se tiver push ativo).
     const dateLabel = `${(entry.entry_date as string).slice(8, 10)}/${(entry.entry_date as string).slice(5, 7)}`;
     const notified = await sendPushToUser(admin, entry.employee_id as string, {

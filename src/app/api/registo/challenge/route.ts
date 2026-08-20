@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { getSessionProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CHALLENGE_TTL_MIN, decidirSelfie, rpFromRequest } from "@/lib/webauthn";
+import {
+  CHALLENGE_TTL_MIN,
+  decidirSelfie,
+  motivoParaCliente,
+  rpFromRequest,
+} from "@/lib/webauthn";
 import type { EntryType } from "@/types";
 
 export const runtime = "nodejs";
@@ -44,6 +49,7 @@ export async function POST(request: Request) {
   const temCredencial = (credenciais ?? []).length > 0;
 
   const politica = await decidirSelfie(admin, {
+    employeeId: profile.id,
     latitude,
     longitude,
     temCredencial,
@@ -82,7 +88,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     challengeId: linha.id,
     requiresPhoto: politica.requiresPhoto,
-    motivo: politica.motivo,
+    // O motivo verdadeiro fica só no servidor (ver motivoParaCliente).
+    motivo: motivoParaCliente(politica.motivo),
     options, // null quando não há dispositivo registado
   });
 }

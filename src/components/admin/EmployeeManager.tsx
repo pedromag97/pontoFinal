@@ -10,6 +10,7 @@ import type { Profile, Worksite } from "@/types";
 import WorksiteAssignment from "@/components/admin/WorksiteAssignment";
 import PageHeader from "@/components/admin/PageHeader";
 import Avatar from "@/components/admin/Avatar";
+import SelfieRequestButton from "@/components/admin/SelfieRequestButton";
 
 const t = getDictionary("pt");
 
@@ -19,12 +20,15 @@ export default function EmployeeManager({
   assignedByEmployee,
   devicesByEmployee,
   syncedByEmployee,
+  selfiePendente,
 }: {
   initialProfiles: Profile[];
   worksites: Worksite[];
   assignedByEmployee: Record<string, string[]>;
   devicesByEmployee: Record<string, number>;
   syncedByEmployee: Record<string, boolean>;
+  /** Funcionários com um pedido de selfie por consumir. */
+  selfiePendente: string[];
 }) {
   const router = useRouter();
   const dialogs = useDialogs();
@@ -326,7 +330,14 @@ export default function EmployeeManager({
                 </td>
                 <td className="px-4 py-3 text-right">
                   {(
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {profile.role === "employee" && (
+                        <SelfieRequestButton
+                          employeeId={profile.id}
+                          employeeName={profile.full_name}
+                          pending={selfiePendente.includes(profile.id)}
+                        />
+                      )}
                       <ActionButton
                         onClick={() => rename(profile)}
                         disabled={busyId === profile.id}

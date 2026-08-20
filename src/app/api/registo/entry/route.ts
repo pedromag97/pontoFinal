@@ -175,5 +175,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // O pedido de selfie da gestão só se consome aqui, quando existe mesmo
+  // um registo com foto. Consumi-lo ao emitir o desafio deixava fugir:
+  // bastava pedir desafio, ver que pedia foto, desistir, e pedir outro.
+  if (photoPath) {
+    await admin
+      .from("selfie_requests")
+      .update({
+        consumed_at: new Date().toISOString(),
+        consumed_entry_id: criado.id,
+      })
+      .eq("employee_id", profile.id)
+      .is("consumed_at", null);
+  }
+
   return NextResponse.json({ entry: criado });
 }

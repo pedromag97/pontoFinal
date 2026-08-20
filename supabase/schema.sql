@@ -244,6 +244,28 @@ create table public.punch_challenges (
 create index punch_challenges_employee_idx
   on public.punch_challenges (employee_id, expires_at);
 
+-- Pedidos de selfie da gestão: "no próximo movimento deste quero foto".
+-- De uso único — consome-se na picagem seguinte que traga foto. Criados à
+-- mão na lista de funcionários, ou automaticamente ao recusar um registo.
+create table public.selfie_requests (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  -- Nulo quando foi automático (recusa de um registo).
+  requested_by uuid references public.profiles (id) on delete set null,
+  reason text not null,
+  created_at timestamptz not null default now(),
+  consumed_at timestamptz,
+  consumed_entry_id uuid references public.time_entries (id) on delete set null
+);
+
+-- Um pedido por consumir de cada vez por funcionário.
+create unique index selfie_requests_um_pendente
+  on public.selfie_requests (employee_id)
+  where consumed_at is null;
+
+create index selfie_requests_employee_idx
+  on public.selfie_requests (employee_id, created_at desc);
+
 -- ------------------------------------------------------------
 -- 2. FUNÇÕES E TRIGGERS
 -- ------------------------------------------------------------
@@ -414,6 +436,22 @@ alter table public.absences enable row level security;
 alter table public.webauthn_credentials enable row level security;
 -- punch_challenges: só o servidor lê/escreve — RLS ligada e sem políticas.
 alter table public.punch_challenges enable row level security;
+alter table public.selfie_requests enable row level security;
+
+-- selfie_requests: só a gestão. O funcionário NÃO vê os seus pedidos: se
+-- soubesse que a foto lhe foi pedida de propósito, quem está a tentar
+-- aldrabar sabia exatamente quando ter cuidado.
+create policy "selfie_requests_select_admin"
+  on public.selfie_requests for select to authenticated
+  using (public.is_admin());
+
+create policy "selfie_requests_insert_admin"
+  on public.selfie_requests for insert to authenticated
+  with check (public.is_admin());
+
+create policy "selfie_requests_delete_admin"
+  on public.selfie_requests for delete to authenticated
+  using (public.is_admin());
 
 -- webauthn_credentials: cada um vê o seu aparelho; admins veem todos.
 -- A escrita é do servidor (service role).
