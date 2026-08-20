@@ -171,8 +171,8 @@ export default async function AdminDashboard({
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-4 py-3 font-medium">{row.name}</td>
-                <td className="px-4 py-3 text-right">{row.days}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="numerico px-4 py-3 text-right">{row.days}</td>
+                <td className="numerico px-4 py-3 text-right">
                   {row.hours > 0 ? row.hours.toFixed(2).replace(".", ",") : "—"}
                 </td>
                 <td className="px-4 py-3 text-right">

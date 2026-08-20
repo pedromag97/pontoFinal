@@ -291,7 +291,7 @@ export default async function RegistosPage({
                     </span>
                   </td>
                   <td
-                    className="px-2 py-1.5 font-semibold whitespace-nowrap"
+                    className="numerico px-2 py-1.5 font-semibold whitespace-nowrap"
                     title={
                       entry.client_timestamp
                         ? `${t.entries.clientTime}: ${formatTimeSeconds(entry.client_timestamp)}`

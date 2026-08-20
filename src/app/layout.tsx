@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f766e",
+  themeColor: "#005e9c",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -31,7 +33,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt">
+    <html
+      lang="pt"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+    >
       <body>
         {children}
         <ServiceWorkerRegister />

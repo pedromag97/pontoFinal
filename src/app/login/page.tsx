@@ -92,11 +92,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-marca-700 py-3.5 text-base font-semibold text-white active:bg-marca-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-marca-700 py-4 text-[17px] font-semibold text-white active:bg-marca-800 disabled:opacity-60"
           >
             {loading ? t.login.loading : t.login.submit}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-xs text-slate-400">
+          {t.login.companies}
+        </p>
       </div>
     </main>
   );

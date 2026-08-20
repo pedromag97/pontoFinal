@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
-import { formatDate, formatTime, todayWorksite, weekdayWorksite } from "@/lib/format";
+import {
+  formatDate,
+  formatHoursMinutes,
+  formatTime,
+  todayWorksite,
+  weekdayWorksite,
+  workedSoFar,
+} from "@/lib/format";
 import {
   addPending,
   getPending,
@@ -96,6 +103,14 @@ export default function EmployeeHome({
     "hidden" | "ask" | "done" | "error"
   >("hidden");
   const [enrollErro, setEnrollErro] = useState<string | null>(null);
+  // Relógio do cartão principal. Só minutos, por isso um tique de 15s
+  // chega e não gasta bateria a redesenhar o ecrã a cada segundo.
+  const [agora, setAgora] = useState<Date | null>(null);
+  useEffect(() => {
+    setAgora(new Date());
+    const id = setInterval(() => setAgora(new Date()), 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Convite para registar o telemóvel (uma vez por aparelho).
   useEffect(() => {
@@ -664,6 +679,28 @@ export default function EmployeeHome({
     })),
   ].sort((a, b) => a.time.localeCompare(b.time));
 
+  // Turno aberto = a última picagem foi uma entrada (do dia ou do almoço).
+  const doDia = [
+    ...entries.map((e) => ({
+      entry_type: e.entry_type as string,
+      created_at: e.created_at,
+    })),
+    ...pendingToday.map((p) => ({
+      entry_type: p.entry_type as string,
+      created_at: p.client_timestamp,
+    })),
+  ].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const ultima = doDia[doDia.length - 1];
+  const turnoAberto =
+    ultima &&
+    (ultima.entry_type === "entrada" || ultima.entry_type === "volta_almoco")
+      ? ultima.created_at
+      : null;
+  const totalAteAgora = workedSoFar(
+    doDia,
+    (agora ?? new Date()).toISOString()
+  );
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col p-5">
       <header className="mb-6 flex items-start justify-between">
@@ -778,40 +815,66 @@ export default function EmployeeHome({
         </p>
       )}
 
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        {sequence.map((type) => {
-          const sent = entries.find((e) => e.entry_type === type);
-          const queued = pendingToday.find((p) => p.entry_type === type);
-          return (
-            <StatusCard
-              key={type}
-              label={t.types[type]}
-              time={
-                sent
-                  ? formatTime(sent.created_at)
-                  : queued
-                    ? formatTime(queued.client_timestamp)
-                    : null
-              }
-              pending={!sent && !!queued}
-              emptyLabel={t.home.notYet}
-            />
-          );
-        })}
-      </div>
+      <section className="mb-4 flex flex-col items-center gap-4 rounded-2xl bg-white p-6 shadow-sm">
+        {/* suppressHydrationWarning: a hora do servidor e a do telemóvel
+            não são a mesma; o relógio só existe a partir do cliente. */}
+        <span
+          suppressHydrationWarning
+          className="numerico text-5xl font-medium tracking-tight text-slate-900"
+        >
+          {agora ? formatTime(agora.toISOString()) : "--:--"}
+        </span>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            turnoAberto
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {turnoAberto
+            ? t.home.shiftOpen.replace("{hora}", formatTime(turnoAberto))
+            : t.home.shiftClosed}
+        </span>
+        {nextType ? (
+          <BigButton
+            label={t.home.actions[nextType]}
+            emoji={t.home.actionEmojis[nextType]}
+            iniciar={nextType === "entrada" || nextType === "volta_almoco"}
+            onClick={() => startFlow(nextType)}
+          />
+        ) : (
+          <p className="w-full rounded-xl bg-emerald-50 py-5 text-center text-lg font-bold text-emerald-700">
+            {t.home.dayComplete}
+          </p>
+        )}
+        <span className="text-center text-xs text-slate-400">
+          {t.home.keepUnlocked}
+        </span>
+      </section>
 
       {todayLog.length > 0 && (
-        <section className="mb-5 rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <section className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-bold text-slate-900">
             {t.home.todayList}
           </h2>
-          <ul className="divide-y divide-slate-100">
+          <ul className="flex flex-col gap-2.5">
             {todayLog.map((row) => (
-              <li
-                key={row.key}
-                className="flex items-center justify-between py-2 text-sm"
-              >
-                <span className="font-medium">{t.types[row.type]}</span>
+              <li key={row.key} className="flex items-center justify-between">
+                <span className="flex items-center gap-2.5">
+                  <span
+                    aria-hidden
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      row.pending
+                        ? "bg-amber-500"
+                        : row.type === "entrada" || row.type === "volta_almoco"
+                          ? "bg-emerald-600"
+                          : "bg-red-700"
+                    }`}
+                  />
+                  <span className="text-sm font-semibold text-slate-900">
+                    {t.types[row.type]}
+                  </span>
+                </span>
                 <span className="flex items-center gap-2">
                   {row.flagged && <span title={t.home.flaggedNotice}>⚠️</span>}
                   {row.pending && (
@@ -819,11 +882,22 @@ export default function EmployeeHome({
                       ⏳ {t.home.pendingBadge}
                     </span>
                   )}
-                  <span className="font-bold">{row.time}</span>
+                  <span className="numerico text-sm text-slate-700">
+                    {row.time}
+                  </span>
                 </span>
               </li>
             ))}
           </ul>
+          <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
+            <span className="text-sm text-slate-500">{t.home.totalSoFar}</span>
+            <span
+              suppressHydrationWarning
+              className="numerico text-base font-medium text-slate-900"
+            >
+              {agora ? formatHoursMinutes(totalAteAgora) : "—"}
+            </span>
+          </div>
         </section>
       )}
 
@@ -835,62 +909,11 @@ export default function EmployeeHome({
 
       <a
         href="/registo/folha"
-        className="mb-5 block rounded-2xl bg-white py-3 text-center text-sm font-semibold text-marca-700 shadow-sm active:bg-slate-50"
+        className="mb-6 block rounded-2xl bg-white py-3 text-center text-sm font-semibold text-marca-700 shadow-sm active:bg-slate-50"
       >
         📅 {t.home.monthSheet} →
       </a>
-
-      <div className="flex flex-1 flex-col justify-center pb-10">
-        {nextType ? (
-          <BigButton
-            label={t.home.actions[nextType]}
-            emoji={t.home.actionEmojis[nextType]}
-            iniciar={nextType === "entrada" || nextType === "volta_almoco"}
-            onClick={() => startFlow(nextType)}
-          />
-        ) : (
-          <p className="rounded-2xl bg-emerald-50 py-6 text-center text-xl font-bold text-emerald-700">
-            {t.home.dayComplete}
-          </p>
-        )}
-      </div>
     </main>
-  );
-}
-
-function StatusCard({
-  label,
-  time,
-  pending,
-  emptyLabel,
-}: {
-  label: string;
-  time: string | null;
-  pending: boolean;
-  emptyLabel: string;
-}) {
-  return (
-    <div
-      className={`rounded-2xl p-4 text-center shadow-sm ${
-        time ? (pending ? "bg-amber-50" : "bg-emerald-50") : "bg-white"
-      }`}
-    >
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-2xl font-bold ${
-          time
-            ? pending
-              ? "text-amber-700"
-              : "text-emerald-700"
-            : "text-slate-300"
-        }`}
-      >
-        {time ?? emptyLabel}
-        {pending && time && <span className="ml-1 align-middle text-sm">⏳</span>}
-      </p>
-    </div>
   );
 }
 
@@ -909,13 +932,13 @@ function BigButton({
   return (
     <button
       onClick={onClick}
-      className={`w-full rounded-3xl py-8 text-xl font-bold text-white shadow-lg ${
+      className={`w-full rounded-xl py-6 text-xl font-semibold text-white ${
         iniciar
-          ? "bg-cta shadow-cta/20 active:bg-cta-escuro"
-          : "bg-marca-700 shadow-marca-700/20 active:bg-marca-800"
+          ? "bg-cta active:bg-cta-escuro"
+          : "bg-marca-800 active:bg-marca-700"
       }`}
     >
-      <span className="mb-1 block text-4xl">{emoji}</span>
+      <span className="mb-1 block text-3xl">{emoji}</span>
       {label}
     </button>
   );

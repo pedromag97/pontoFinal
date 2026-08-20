@@ -13,6 +13,19 @@
   --color-marca-800: #004a7c;
   --color-cta: #f25c00;
   --color-cta-escuro: #d14e00;
+  /* +Innovation, a terceira empresa do grupo. */
+  --color-inovacao: #71b2c9;
+
+  /* Geist, carregada localmente pelo pacote `geist` — a PWA tem de
+     funcionar sem rede, por isso nada de fontes externas. */
+  --font-sans: var(--font-geist-sans), "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Cantos e sombras das superfícies, iguais em toda a aplicação. */
+  --radius-cartao: 16px;
+  --radius-controlo: 12px;
+  --shadow-cartao: 0 1px 2px rgb(15 23 42 / 0.06);
+  --shadow-cartao-alto: 0 1px 3px rgb(15 23 42 / 0.1);
 }
 
 :root {
@@ -25,6 +38,14 @@ body {
 }
 
 body {
-  @apply bg-slate-100 text-slate-900 antialiased;
+  @apply bg-slate-100 font-sans text-slate-900 antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Horas, totais e datas: sempre em Geist Mono com algarismos de largura
+   fixa, para as colunas alinharem e os números não "saltarem" a cada
+   segundo que passa. */
+.numerico {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

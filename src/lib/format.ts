@@ -95,6 +95,37 @@ export function workedHours(
   return Math.round(h * 100) / 100;
 }
 
+// Horas feitas até agora, com o turno ainda aberto: conta cada entrada
+// até à saída correspondente, e a última entrada sem saída até ao momento.
+// É isto que alimenta o "Total até agora" no ecrã de registo.
+export function workedSoFar(
+  day: { entry_type: string; created_at: string }[],
+  agoraIso: string
+): number {
+  const ordenado = [...day].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
+  let total = 0;
+  let abertoDesde: string | null = null;
+  for (const e of ordenado) {
+    const comeca = e.entry_type === "entrada" || e.entry_type === "volta_almoco";
+    const acaba = e.entry_type === "saida" || e.entry_type === "saida_almoco";
+    if (comeca && !abertoDesde) abertoDesde = e.created_at;
+    else if (acaba && abertoDesde) {
+      total += hoursBetween(abertoDesde, e.created_at);
+      abertoDesde = null;
+    }
+  }
+  if (abertoDesde) total += hoursBetween(abertoDesde, agoraIso);
+  return total;
+}
+
+// "6h 12m" — o formato que a folha e o ecrã de registo usam.
+export function formatHoursMinutes(hours: number): string {
+  const totalMin = Math.max(0, Math.round(hours * 60));
+  return `${Math.floor(totalMin / 60)}h ${String(totalMin % 60).padStart(2, "0")}m`;
+}
+
 // Converte "YYYY-MM-DD" + "HH:MM" (hora de Lisboa) em ISO UTC.
 export function lisbonToUtcIso(dateStr: string, timeStr: string): string {
   const guess = new Date(`${dateStr}T${timeStr}:00Z`);
