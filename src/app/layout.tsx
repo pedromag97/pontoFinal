@@ -5,8 +5,8 @@ import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
-  title: "Registo de Ponto",
-  description: "Folha de ponto diária com selfie e localização GPS",
+  title: "Ponto Final",
+  description: "Registo de presenças na obra",
   manifest: "/manifest.json",
   icons: {
     // O separador do browser desenha a 16–32 px: aí entra a versão de
@@ -14,15 +14,15 @@ export const metadata: Metadata = {
     // perder nitidez); os PNG são o recurso para quem não suporta.
     icon: [
       { url: "/simbolo-ponto-pequeno.svg", type: "image/svg+xml" },
-      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/ponto-favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/ponto-favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/ponto-192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/icons/apple-touch-icon.png",
+    apple: "/icons/ponto-apple-touch.png",
   },
   appleWebApp: {
     capable: true,
-    title: "Ponto",
+    title: "Ponto Final",
     statusBarStyle: "default",
   },
 };

@@ -3,14 +3,15 @@
 // - navegações: rede primeiro; sem rede, serve a última versão em cache da
 //   página (permite abrir a app offline e registar para a fila local),
 //   com offline.html como último recurso.
-// v5: icone do separador do browser em versao de traco grosso. A subida
-// de versao e o que faz os telemoveis ja instalados largarem o antigo.
-const CACHE = "ponto-v5";
+// v6: os icones mudaram de nome de ficheiro. O Chrome compara os icones
+// do manifest pelo URL e nao pelo conteudo, por isso manter o mesmo nome
+// deixava o atalho ja instalado com o icone antigo para sempre.
+const CACHE = "ponto-v6";
 const PRECACHE = [
   "/offline.html",
   "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
+  "/icons/ponto-192.png",
+  "/icons/ponto-512.png",
   "/simbolo-ponto.svg",
   "/simbolo-ponto-pequeno.svg",
 ];
@@ -44,8 +45,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "Registo de Ponto", {
       body: data.body || "",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      icon: "/icons/ponto-192.png",
+      badge: "/icons/ponto-192.png",
       data: { url: data.url || "/registo" },
     })
   );
