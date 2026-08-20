@@ -206,12 +206,27 @@ create table public.webauthn_credentials (
   public_key text not null,
   counter bigint not null default 0,
   device_label text,
+  -- Identificador do aparelho, gerado na app e guardado no browser.
+  device_uid text,
+  -- multiDevice = chave sincronizada na conta iCloud/Google do próprio.
+  device_type text,
+  backed_up boolean,
   created_at timestamptz not null default now(),
   last_used_at timestamptz
 );
 
 create index webauthn_credentials_employee_idx
   on public.webauthn_credentials (employee_id);
+
+-- Uma conta, um aparelho: trocar de telemóvel exige que a gestão remova
+-- o antigo. E um aparelho, uma conta: assim ninguém regista o seu
+-- telemóvel também na conta do colega para picar pelos dois.
+create unique index webauthn_credentials_um_por_funcionario
+  on public.webauthn_credentials (employee_id);
+
+create unique index webauthn_credentials_um_por_aparelho
+  on public.webauthn_credentials (device_uid)
+  where device_uid is not null;
 
 -- Desafios de cada picagem: ligam o pedido (movimento, local) à resposta
 -- assinada e guardam se a selfie era exigida desta vez. Uso único.

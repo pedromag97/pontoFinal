@@ -95,6 +95,7 @@ export default function EmployeeHome({
   const [enrollBanner, setEnrollBanner] = useState<
     "hidden" | "ask" | "done" | "error"
   >("hidden");
+  const [enrollErro, setEnrollErro] = useState<string | null>(null);
 
   // Convite para registar o telemóvel (uma vez por aparelho).
   useEffect(() => {
@@ -104,22 +105,49 @@ export default function EmployeeHome({
     setEnrollBanner("ask");
   }, [temCredencial]);
 
+  // Identificador deste aparelho, criado à primeira vez e guardado no
+  // browser. Não identifica a pessoa — serve só para o servidor recusar
+  // que duas contas se registem no mesmo telemóvel.
+  function idDoAparelho(): string {
+    const chave = "ponto-aparelho";
+    let id = localStorage.getItem(chave);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(chave, id);
+    }
+    return id;
+  }
+
   async function registarDispositivo() {
+    const aparelho = idDoAparelho();
     try {
-      const res = await fetch("/api/webauthn/register");
-      if (!res.ok) throw new Error();
+      const res = await fetch(
+        `/api/webauthn/register?aparelho=${encodeURIComponent(aparelho)}`
+      );
+      if (!res.ok) {
+        const erro = await res.json().catch(() => null);
+        throw new Error(erro?.mensagem ?? "");
+      }
       const options = await res.json();
       const resposta = await startRegistration({ optionsJSON: options });
       const guardar = await fetch("/api/webauthn/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resposta, etiqueta: navigator.platform }),
+        body: JSON.stringify({
+          resposta,
+          etiqueta: navigator.platform,
+          aparelho,
+        }),
       });
-      if (!guardar.ok) throw new Error();
+      if (!guardar.ok) {
+        const erro = await guardar.json().catch(() => null);
+        throw new Error(erro?.mensagem ?? "");
+      }
       setTemCredencial(true);
       setEnrollBanner("done");
       setTimeout(() => setEnrollBanner("hidden"), 4000);
-    } catch {
+    } catch (e) {
+      setEnrollErro((e as Error).message || null);
       setEnrollBanner("error");
     }
   }
@@ -720,7 +748,7 @@ export default function EmployeeHome({
       )}
       {enrollBanner === "error" && (
         <p className="mb-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {t.home.enrollError}
+          {enrollErro ?? t.home.enrollError}
         </p>
       )}
 

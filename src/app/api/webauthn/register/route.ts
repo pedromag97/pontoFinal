@@ -10,9 +10,57 @@ import { rpFromRequest } from "@/lib/webauthn";
 
 export const runtime = "nodejs";
 
+type Admin = ReturnType<typeof createAdminClient>;
+
+// Devolve a resposta de recusa, ou null se o registo pode seguir.
+async function verificarRegras(
+  admin: Admin,
+  employeeId: string,
+  deviceUid: string | null
+): Promise<NextResponse | null> {
+  const { count } = await admin
+    .from("webauthn_credentials")
+    .select("id", { count: "exact", head: true })
+    .eq("employee_id", employeeId);
+  if ((count ?? 0) > 0) {
+    return NextResponse.json(
+      {
+        error: "ja_tem_aparelho",
+        mensagem:
+          "Já tens um telemóvel associado a esta conta. Para trocar de aparelho, pede à gestão para remover o antigo.",
+      },
+      { status: 409 }
+    );
+  }
+
+  if (deviceUid) {
+    const { data: doutro } = await admin
+      .from("webauthn_credentials")
+      .select("employee_id")
+      .eq("device_uid", deviceUid)
+      .maybeSingle();
+    if (doutro && doutro.employee_id !== employeeId) {
+      return NextResponse.json(
+        {
+          error: "aparelho_de_outra_conta",
+          mensagem:
+            "Este telemóvel já está associado a outro funcionário. Cada aparelho só pode ser usado por uma pessoa.",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
+  return null;
+}
+
 // Registo do telemóvel do funcionário (uma vez por aparelho).
 // GET  → opções para o browser criar a chave
 // POST → confirma a resposta e guarda a chave pública
+//
+// Duas regras, verificadas nos dois passos: uma conta só tem um aparelho,
+// e um aparelho só serve uma conta (senão bastava alguém registar o seu
+// telemóvel também na conta do colega e picar pelos dois).
 export async function GET(request: Request) {
   const session = await getSessionProfile();
   if (!session) {
@@ -21,6 +69,12 @@ export async function GET(request: Request) {
   const { profile } = session;
   const { rpID, rpName } = rpFromRequest(request);
   const admin = createAdminClient();
+
+  const deviceUid = new URL(request.url).searchParams.get("aparelho");
+  const conflito = await verificarRegras(admin, profile.id, deviceUid);
+  // Verificar antes de pedir a digital, para o erro aparecer já e não
+  // depois de a pessoa encostar o dedo.
+  if (conflito) return conflito;
 
   const { data: existentes } = await admin
     .from("webauthn_credentials")
@@ -69,10 +123,20 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     resposta?: RegistrationResponseJSON;
     etiqueta?: string;
+    aparelho?: string;
   } | null;
   if (!body?.resposta) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
+
+  // Repetir a verificação aqui: o GET é só para dar o erro cedo, este é
+  // que conta (nada impede alguém de chamar o POST diretamente).
+  const conflito = await verificarRegras(
+    admin,
+    profile.id,
+    body.aparelho ?? null
+  );
+  if (conflito) return conflito;
 
   const { data: desafio } = await admin
     .from("punch_challenges")
@@ -108,13 +172,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "não verificado" }, { status: 400 });
   }
 
-  const { credential } = verificacao.registrationInfo;
+  const { credential, credentialDeviceType, credentialBackedUp } =
+    verificacao.registrationInfo;
   const { error } = await admin.from("webauthn_credentials").insert({
     employee_id: profile.id,
     credential_id: credential.id,
     public_key: Buffer.from(credential.publicKey).toString("base64url"),
     counter: credential.counter,
     device_label: body.etiqueta?.slice(0, 60) ?? null,
+    device_uid: body.aparelho?.slice(0, 64) ?? null,
+    // multiDevice = chave sincronizada na conta iCloud/Google, por isso
+    // pode aparecer noutro aparelho do próprio. A gestão vê isto na lista.
+    device_type: credentialDeviceType,
+    backed_up: credentialBackedUp,
   });
   await admin
     .from("punch_challenges")
@@ -122,7 +192,17 @@ export async function POST(request: Request) {
     .eq("id", desafio.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Corrida entre dois pedidos: os índices únicos são a última defesa.
+    const duplicado = /duplicate key|unique/i.test(error.message);
+    return NextResponse.json(
+      {
+        error: duplicado ? "ja_registado" : error.message,
+        mensagem: duplicado
+          ? "Este telemóvel ou esta conta já têm registo. Fala com a gestão."
+          : undefined,
+      },
+      { status: duplicado ? 409 : 500 }
+    );
   }
   return NextResponse.json({ ok: true });
 }

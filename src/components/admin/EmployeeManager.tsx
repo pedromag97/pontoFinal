@@ -16,11 +16,13 @@ export default function EmployeeManager({
   worksites,
   assignedByEmployee,
   devicesByEmployee,
+  syncedByEmployee,
 }: {
   initialProfiles: Profile[];
   worksites: Worksite[];
   assignedByEmployee: Record<string, string[]>;
   devicesByEmployee: Record<string, number>;
+  syncedByEmployee: Record<string, boolean>;
 }) {
   const router = useRouter();
   const dialogs = useDialogs();
@@ -271,9 +273,11 @@ export default function EmployeeManager({
                     <span className="text-slate-300">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
-                  {profile.role === "employee" ? (
-                    (devicesByEmployee[profile.id] ?? 0) > 0 ? (
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {profile.role !== "employee" ? (
+                    <span className="text-slate-300">—</span>
+                  ) : (devicesByEmployee[profile.id] ?? 0) > 0 ? (
+                    <>
                       <button
                         onClick={() => removerDispositivo(profile)}
                         disabled={busyId === profile.id}
@@ -282,13 +286,19 @@ export default function EmployeeManager({
                       >
                         👆 {t.employees.deviceYes}
                       </button>
-                    ) : (
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
-                        {t.employees.deviceNo}
-                      </span>
-                    )
+                      {syncedByEmployee[profile.id] && (
+                        <span
+                          title={t.employees.deviceSyncedHint}
+                          className="ml-1 cursor-help rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
+                        >
+                          ☁️
+                        </span>
+                      )}
+                    </>
                   ) : (
-                    <span className="text-slate-300">—</span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
+                      {t.employees.deviceNo}
+                    </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">

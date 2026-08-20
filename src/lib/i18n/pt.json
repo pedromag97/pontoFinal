@@ -354,6 +354,7 @@
     "deviceYes": "registado",
     "deviceNo": "por registar",
     "deviceReset": "Remover telemóvel",
+    "deviceSyncedHint": "Chave sincronizada na conta iCloud/Google do funcionário — pode funcionar noutro aparelho dele. Não permite que outra pessoa pique por ele.",
     "deviceResetConfirm": "Remover o telemóvel registado deste funcionário? Ele terá de registar outro na app — até lá, os registos voltam a exigir selfie.",
     "usernameInvalid": "Username inválido: 3–30 caracteres, minúsculas, números, ponto, hífen ou underscore.",
     "password": "Password inicial",
