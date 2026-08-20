@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
-import { monthBounds, monthWorksite, workedHours } from "@/lib/format";
+import {
+  formatHoursMinutes,
+  monthBounds,
+  monthWorksite,
+  workedHours,
+} from "@/lib/format";
 import type { TimeEntryWithName } from "@/types";
 import { isSuspicious } from "@/lib/entries";
 import SaturdayToggle from "@/components/admin/SaturdayToggle";
+import Avatar from "@/components/admin/Avatar";
+import PageHeader, { MetricCard } from "@/components/admin/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +119,10 @@ export default async function AdminDashboard({
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const totalHours = rows.reduce((soma, r) => soma + r.hours, 0);
+  const totalFlagged = rows.reduce((soma, r) => soma + r.flagged, 0);
+  const totalPending = rows.reduce((soma, r) => soma + r.pending, 0);
+
   // navegação de meses
   const [y, m] = month.split("-").map(Number);
   const prev = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, "0")}`;
@@ -124,28 +135,55 @@ export default async function AdminDashboard({
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-4">
-        <h1 className="text-2xl font-bold">{t.dashboard.title}</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Link
-            href={`/admin?m=${prev}`}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50"
-          >
-            ←
-          </Link>
-          <span className="min-w-36 text-center font-semibold capitalize">
-            {monthLabel}
-          </span>
-          <Link
-            href={`/admin?m=${next}`}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50"
-          >
-            →
-          </Link>
-        </div>
+      <PageHeader
+        title={t.dashboard.title}
+        subtitle={t.dashboard.subtitle
+          .replace("{funcionarios}", String(rows.length))
+          .replace("{porValidar}", String(totalPending))}
+      >
+        <Link
+          href={`/admin?m=${prev}`}
+          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          ←
+        </Link>
+        <span className="min-w-36 rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold capitalize text-slate-700">
+          {monthLabel}
+        </span>
+        <Link
+          href={`/admin?m=${next}`}
+          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          →
+        </Link>
+      </PageHeader>
+
+      <div className="mb-5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <MetricCard
+          label={t.dashboard.metricEmployees}
+          value={rows.length}
+          note={t.dashboard.metricEmployeesNote}
+        />
+        <MetricCard
+          label={t.dashboard.totalHours}
+          value={formatHoursMinutes(totalHours)}
+          note={monthLabel}
+        />
+        <MetricCard
+          label={t.dashboard.flagged}
+          value={totalFlagged}
+          note={t.dashboard.metricFlaggedNote}
+          tone={totalFlagged > 0 ? "alerta" : "neutro"}
+        />
+        <MetricCard
+          label={t.dashboard.pendingValidation}
+          value={totalPending}
+          note={t.dashboard.metricPendingNote}
+          tone={totalPending > 0 ? "mau" : "bom"}
+        />
       </div>
 
-      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -170,10 +208,17 @@ export default async function AdminDashboard({
             )}
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 font-medium">{row.name}</td>
+                <td className="px-4 py-3">
+                  <span className="flex items-center gap-2.5">
+                    <Avatar nome={row.name} />
+                    <span className="font-semibold whitespace-nowrap text-slate-900">
+                      {row.name}
+                    </span>
+                  </span>
+                </td>
                 <td className="numerico px-4 py-3 text-right">{row.days}</td>
                 <td className="numerico px-4 py-3 text-right">
-                  {row.hours > 0 ? row.hours.toFixed(2).replace(".", ",") : "—"}
+                  {row.hours > 0 ? formatHoursMinutes(row.hours) : "—"}
                 </td>
                 <td className="px-4 py-3 text-right">
                   {row.flagged > 0 ? (
@@ -220,6 +265,16 @@ export default async function AdminDashboard({
             ))}
           </tbody>
         </table>
+        {rows.length > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3.5">
+            <span className="text-[13px] font-semibold text-slate-600">
+              {t.dashboard.monthTotal}
+            </span>
+            <span className="numerico text-lg font-medium text-slate-900">
+              {formatHoursMinutes(totalHours)}
+            </span>
+          </div>
+        )}
       </div>
 
     </div>

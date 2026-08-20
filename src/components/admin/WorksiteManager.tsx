@@ -7,6 +7,7 @@ import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 import { mapsUrl } from "@/lib/format";
 import type { Worksite } from "@/types";
+import PageHeader from "@/components/admin/PageHeader";
 
 const t = getDictionary("pt");
 
@@ -190,10 +191,7 @@ export default function WorksiteManager({
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">{t.worksites.title}</h1>
-      <p className="mb-4 max-w-2xl text-sm text-slate-500">
-        {t.worksites.intro}
-      </p>
+      <PageHeader title={t.worksites.title} subtitle={t.worksites.intro} />
 
       <form
         onSubmit={createWorksite}

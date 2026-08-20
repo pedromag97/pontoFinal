@@ -7,6 +7,7 @@ import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 import { formatDateShort } from "@/lib/format";
 import type { Holiday } from "@/types";
+import PageHeader from "@/components/admin/PageHeader";
 
 const t = getDictionary("pt");
 
@@ -82,10 +83,7 @@ export default function HolidayManager({
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">📅 {t.holidays.title}</h1>
-      <p className="mb-4 max-w-2xl text-sm text-slate-500">
-        {t.holidays.intro}
-      </p>
+      <PageHeader title={t.holidays.title} subtitle={t.holidays.intro} />
 
       <form onSubmit={add} className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">

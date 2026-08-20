@@ -28,7 +28,7 @@ export default function NavDropdown({
 
   return (
     <details ref={ref} className="relative">
-      <summary className="cursor-pointer select-none list-none rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+      <summary className="cursor-pointer select-none list-none rounded-xl px-3.5 py-2 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
         {label} <span className="text-xs">▾</span>
       </summary>
       <div

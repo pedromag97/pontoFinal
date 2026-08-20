@@ -7,6 +7,7 @@ import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 import { formatDateShort, todayWorksite } from "@/lib/format";
 import type { AbsenceKind, AbsenceWithName, Profile } from "@/types";
+import PageHeader from "@/components/admin/PageHeader";
 
 const t = getDictionary("pt");
 
@@ -146,8 +147,7 @@ export default function AbsenceManager({
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">{t.absences.title}</h1>
-      <p className="mb-4 max-w-2xl text-sm text-slate-500">{t.absences.intro}</p>
+      <PageHeader title={t.absences.title} subtitle={t.absences.intro} />
 
       <form onSubmit={criar} className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">

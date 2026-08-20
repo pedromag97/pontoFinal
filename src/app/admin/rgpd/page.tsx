@@ -1,5 +1,6 @@
 import { getDictionary } from "@/lib/i18n";
 import RetentionButton from "@/components/admin/RetentionButton";
+import PageHeader from "@/components/admin/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ const t = getDictionary("pt");
 export default function RgpdPage() {
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">🔒 RGPD</h1>
+      <PageHeader title={t.nav.privacy} subtitle={t.dashboard.privacySubtitle} />
 
       <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
         <h2 className="mb-1 font-semibold">🗑️ {t.dashboard.retentionTitle}</h2>

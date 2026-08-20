@@ -18,6 +18,7 @@ import EditTimeButton from "@/components/admin/EditTimeButton";
 import ValidateToggle from "@/components/admin/ValidateToggle";
 import RejectButton from "@/components/admin/RejectButton";
 import BulkValidateButton from "@/components/admin/BulkValidateButton";
+import PageHeader from "@/components/admin/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function RegistosPage({
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">{t.entries.title}</h1>
+      <PageHeader title={t.entries.title} />
 
       <form
         method="get"

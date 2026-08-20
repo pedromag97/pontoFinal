@@ -8,6 +8,8 @@ import { useDialogs } from "@/components/ui/Dialogs";
 import { formatDateShort } from "@/lib/format";
 import type { Profile, Worksite } from "@/types";
 import WorksiteAssignment from "@/components/admin/WorksiteAssignment";
+import PageHeader from "@/components/admin/PageHeader";
+import Avatar from "@/components/admin/Avatar";
 
 const t = getDictionary("pt");
 
@@ -163,7 +165,7 @@ export default function EmployeeManager({
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">{t.employees.title}</h1>
+      <PageHeader title={t.employees.title} />
 
       <form
         onSubmit={createEmployee}
@@ -251,8 +253,13 @@ export default function EmployeeManager({
                 className={`border-b border-slate-100 last:border-0 ${!profile.active ? "opacity-50" : ""}`}
               >
                 <td className="px-4 py-3">
-                  <span className="font-medium">{profile.full_name || "—"}</span>
-                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                  <span className="flex items-center gap-2.5">
+                    <Avatar nome={profile.full_name || "?"} />
+                    <span className="font-semibold whitespace-nowrap text-slate-900">
+                      {profile.full_name || "—"}
+                    </span>
+                  </span>
+                  <span className="ml-9.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
                     {profile.role === "admin"
                       ? t.employees.role_admin
                       : t.employees.role_employee}
