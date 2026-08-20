@@ -9,7 +9,15 @@ export const metadata: Metadata = {
   description: "Folha de ponto diária com selfie e localização GPS",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192.png",
+    // O separador do browser desenha a 16–32 px: aí entra a versão de
+    // traço grosso. O SVG vem primeiro para quem o suporta (escala sem
+    // perder nitidez); os PNG são o recurso para quem não suporta.
+    icon: [
+      { url: "/simbolo-ponto-pequeno.svg", type: "image/svg+xml" },
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icons/apple-touch-icon.png",
   },
   appleWebApp: {

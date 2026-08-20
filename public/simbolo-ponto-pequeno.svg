@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ponto Final">
+  <!-- Versão do símbolo para tamanhos pequenos (separador do browser,
+       16 e 32 px). É o mesmo mostrador, com traços bem mais grossos e
+       sem o canto arredondado: a esse tamanho, os traços finos do
+       símbolo grande desaparecem e o arredondado só come área útil. -->
+  <rect width="512" height="512" fill="#005e9c"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#ffffff" stroke-width="48"/>
+  <path d="M256 154 V256 H164" fill="none" stroke="#ffffff" stroke-width="48"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="40" fill="#ff6600"/>
+</svg>
