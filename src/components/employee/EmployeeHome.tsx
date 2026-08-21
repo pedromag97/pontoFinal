@@ -87,6 +87,19 @@ export default function EmployeeHome({
   );
   const [position, setPosition] = useState<Position | null>(null);
   const [geoError, setGeoError] = useState(false);
+  // Porque falhou o GPS. A diferença importa: "negado" é permissão do
+  // browser e o botão de repetir nunca resolve — a pessoa tem de ir às
+  // definições. "indisponível" é o GPS do telemóvel desligado ou sem
+  // sinal, e aí repetir faz sentido.
+  const [geoCausa, setGeoCausa] = useState<"negado" | "indisponivel" | null>(
+    null
+  );
+  // Estado do GPS visto do ecrã inicial, antes de a pessoa se meter no
+  // fluxo. Sem isto, só se descobre que o GPS está desligado depois de
+  // carregar em "Registar" — e aí já é tarde.
+  const [gpsAviso, setGpsAviso] = useState<"negado" | "indisponivel" | null>(
+    null
+  );
   const [captureTime, setCaptureTime] = useState<Date | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,10 +251,12 @@ export default function EmployeeHome({
 
   const requestLocation = useCallback(() => {
     setGeoError(false);
+    setGeoCausa(null);
     setPosition(null);
     const id = ++geoRequestId.current;
     if (!("geolocation" in navigator)) {
       setGeoError(true);
+      setGeoCausa("indisponivel");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -252,13 +267,74 @@ export default function EmployeeHome({
           longitude: pos.coords.longitude,
           accuracy: Math.round(pos.coords.accuracy),
         });
+        setGpsAviso(null);
       },
-      () => {
+      (err) => {
         if (id !== geoRequestId.current) return;
         setGeoError(true);
+        setGeoCausa(err.code === 1 ? "negado" : "indisponivel");
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
     );
+  }, []);
+
+  // Verificar o GPS no ecrã inicial, para o problema aparecer antes de a
+  // pessoa carregar em "Registar" e ficar encalhada no meio do fluxo.
+  //
+  // Só confirmamos quando a permissão JÁ foi dada: nesse caso o pedido é
+  // silencioso e serve também para aquecer a posição. Com a permissão por
+  // decidir não pedimos nada aqui — a caixa do browser deve aparecer no
+  // momento da picagem, que é quando faz sentido para quem a vê.
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    if (!("geolocation" in navigator)) {
+      setGpsAviso("indisponivel");
+      return;
+    }
+    if (!navigator.permissions?.query) return;
+
+    let vivo = true;
+    let estado: PermissionStatus | null = null;
+
+    function verificar() {
+      if (!vivo || !estado) return;
+      if (estado.state === "denied") {
+        setGpsAviso("negado");
+        return;
+      }
+      if (estado.state !== "granted") {
+        setGpsAviso(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        () => vivo && setGpsAviso(null),
+        // Permissão dada mas sem posição: GPS do telemóvel desligado.
+        () => vivo && setGpsAviso("indisponivel"),
+        { timeout: 15000, maximumAge: 60000 }
+      );
+    }
+
+    navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((p) => {
+        if (!vivo) return;
+        estado = p;
+        p.addEventListener("change", verificar);
+        verificar();
+      })
+      .catch(() => {});
+
+    // A pessoa sai para as definições a ligar o GPS e volta: reavaliar.
+    function aoVoltar() {
+      if (document.visibilityState === "visible") verificar();
+    }
+    document.addEventListener("visibilitychange", aoVoltar);
+
+    return () => {
+      vivo = false;
+      estado?.removeEventListener("change", verificar);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
   }, []);
 
   // O GPS é preciso ANTES de saber se esta picagem leva selfie: é ele que
@@ -267,6 +343,7 @@ export default function EmployeeHome({
     return new Promise((resolve, reject) => {
       if (!("geolocation" in navigator)) {
         setGeoError(true);
+        setGeoCausa("indisponivel");
         reject(new Error("sem gps"));
         return;
       }
@@ -279,10 +356,14 @@ export default function EmployeeHome({
           };
           setPosition(p);
           setGeoError(false);
+          setGeoCausa(null);
+          setGpsAviso(null);
           resolve(p);
         },
         (err) => {
           setGeoError(true);
+          // code 1 = PERMISSION_DENIED
+          setGeoCausa(err.code === 1 ? "negado" : "indisponivel");
           reject(err);
         },
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
@@ -527,11 +608,11 @@ export default function EmployeeHome({
             alt="Selfie"
             className="mb-4 aspect-[3/4] w-full rounded-2xl object-cover shadow-sm"
           />
-        ) : (
+        ) : desafio && !desafio.requiresPhoto ? (
           <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-4 text-center text-sm font-medium text-emerald-800">
             👍 {t.preview.noPhotoNeeded}
           </p>
-        )}
+        ) : null}
 
         <div className="mb-4 space-y-2 rounded-2xl bg-white p-4 text-sm shadow-sm">
           <div className="flex justify-between">
@@ -545,7 +626,9 @@ export default function EmployeeHome({
             <span className="font-mono text-xs font-semibold">
               {position
                 ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}`
-                : t.preview.locationPending}
+                : geoError
+                  ? t.preview.locationUnavailable
+                  : t.preview.locationPending}
             </span>
           </div>
           {position && (
@@ -568,13 +651,22 @@ export default function EmployeeHome({
 
         {geoError && (
           <div className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-            <p className="mb-2">{t.preview.locationError}</p>
-            <button
-              onClick={requestLocation}
-              className="font-semibold underline"
-            >
-              {t.preview.retryLocation}
-            </button>
+            <p className="mb-2">
+              {geoCausa === "negado"
+                ? t.preview.locationDenied
+                : t.preview.locationError}
+            </p>
+            {/* Com a permissão negada, repetir nunca resolve: o browser já
+                não volta a perguntar. Mostrar o botão seria mandar a
+                pessoa bater na mesma parede outra vez. */}
+            {geoCausa !== "negado" && (
+              <button
+                onClick={requestLocation}
+                className="font-semibold underline"
+              >
+                {t.preview.retryLocation}
+              </button>
+            )}
           </div>
         )}
 
@@ -600,7 +692,9 @@ export default function EmployeeHome({
               ? t.preview.sending
               : position
                 ? t.preview.confirm
-                : t.capture.gettingLocation}
+                : geoError
+                  ? t.preview.noLocation
+                  : t.capture.gettingLocation}
           </button>
           <button
             onClick={() => (photo ? setStep("capture") : setStep("home"))}
@@ -609,6 +703,18 @@ export default function EmployeeHome({
           >
             {photo ? t.preview.retake : t.capture.cancel}
           </button>
+          {/* Sem GPS o botão de confirmar está desativado; sem esta saída
+              quem já tirou a selfie só tinha "repetir fotografia" e ficava
+              a rodar entre a câmara e este ecrã. */}
+          {photo && (
+            <button
+              onClick={() => setStep("home")}
+              disabled={sending}
+              className="w-full py-1 text-sm font-semibold text-slate-500 underline"
+            >
+              {t.capture.cancel}
+            </button>
+          )}
         </div>
       </main>
     );
@@ -813,6 +919,17 @@ export default function EmployeeHome({
         <p className="mb-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
           {t.home.pushEnabled}
         </p>
+      )}
+
+      {gpsAviso && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="font-semibold text-amber-900">
+            📍 {t.home.gpsOffTitle}
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            {gpsAviso === "negado" ? t.home.gpsDeniedBody : t.home.gpsOffBody}
+          </p>
+        </div>
       )}
 
       <section className="mb-4 flex flex-col items-center gap-4 rounded-2xl bg-white p-6 shadow-sm">
