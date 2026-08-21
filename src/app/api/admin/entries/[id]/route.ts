@@ -129,6 +129,7 @@ export async function PATCH(
       employee_id: entry.employee_id as string,
       requested_by: session.user.id,
       reason: `Registo recusado: ${reason}`,
+      source_entry_id: id,
     });
     if (erroPedido && erroPedido.code !== "23505") {
       console.error("[recusa] pedido de selfie falhou:", erroPedido.message);
@@ -162,6 +163,17 @@ export async function PATCH(
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Desfazer a recusa desfaz também o que ela desencadeou: se o registo
+    // afinal estava bom, não faz sentido o funcionário continuar obrigado
+    // a tirar foto. Só apaga o pedido criado por esta recusa e ainda por
+    // consumir — um pedido feito à mão pela gestão fica onde está.
+    await admin
+      .from("selfie_requests")
+      .delete()
+      .eq("source_entry_id", id)
+      .is("consumed_at", null);
+
     return NextResponse.json({ ok: true });
   }
 

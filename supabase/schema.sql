@@ -255,8 +255,15 @@ create table public.selfie_requests (
   reason text not null,
   created_at timestamptz not null default now(),
   consumed_at timestamptz,
-  consumed_entry_id uuid references public.time_entries (id) on delete set null
+  consumed_entry_id uuid references public.time_entries (id) on delete set null,
+  -- Registo cuja recusa criou este pedido (nulo se foi pedido à mão).
+  -- Anular a recusa apaga o pedido que ela originou.
+  source_entry_id uuid references public.time_entries (id) on delete cascade
 );
+
+create index selfie_requests_origem_idx
+  on public.selfie_requests (source_entry_id)
+  where source_entry_id is not null;
 
 -- Um pedido por consumir de cada vez por funcionário.
 create unique index selfie_requests_um_pendente

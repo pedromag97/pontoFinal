@@ -274,7 +274,7 @@
     "monthTotal": "Total do mês",
     "metricEmployees": "Funcionários",
     "privacySubtitle": "Retenção de fotografias e direitos dos titulares dos dados.",
-    "metricEmployeesNote": "ativos no mês",
+    "metricEmployeesNote": "no sistema",
     "metricFlaggedNote": "registos com aviso",
     "metricPendingNote": "à espera de validação",
     "allValidated": "Tudo validado",
@@ -290,6 +290,8 @@
     "retentionBody": "As fotos com mais de 3 meses podem ser apagadas manualmente aqui, ou automaticamente via cron da Vercel (ver README).",
     "retentionButton": "Apagar fotos com mais de 3 meses",
     "retentionConfirm": "Apagar definitivamente todas as fotos com mais de 3 meses? Os registos (horas/GPS) mantêm-se.",
+    "retentionOrphans": "fotos órfãs de picagens interrompidas",
+    "retentionChallenges": "pedidos de picagem antigos",
     "retentionDone": "fotos apagadas."
   },
   "entries": {

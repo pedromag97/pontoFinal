@@ -7,10 +7,14 @@ export default function RetentionButton({
   label,
   confirmText,
   doneSuffix,
+  orphansSuffix,
+  challengesSuffix,
 }: {
   label: string;
   confirmText: string;
   doneSuffix: string;
+  orphansSuffix: string;
+  challengesSuffix: string;
 }) {
   const [busy, setBusy] = useState(false);
   const dialogs = useDialogs();
@@ -33,7 +37,16 @@ export default function RetentionButton({
       return;
     }
     const body = await res.json();
-    setResult(`${body.purged} ${doneSuffix}`);
+    // Além das fotos com mais de 3 meses, a purga limpa fotos órfãs
+    // (picagens interrompidas) e desafios antigos. Mostrar tudo, senão
+    // parece que não fez nada nos meses sem fotos a expirar.
+    const extras: string[] = [];
+    if (body.orfas > 0) extras.push(`${body.orfas} ${orphansSuffix}`);
+    if (body.desafios > 0) extras.push(`${body.desafios} ${challengesSuffix}`);
+    setResult(
+      `${body.purged} ${doneSuffix}` +
+        (extras.length > 0 ? ` · ${extras.join(" · ")}` : "")
+    );
   }
 
   return (

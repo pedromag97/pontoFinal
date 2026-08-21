@@ -475,7 +475,22 @@ export default function EmployeeHome({
       return;
     }
 
-    // 1. Foto, quando esta picagem a exige.
+    // 1. Impressão digital primeiro, quando o telemóvel está registado.
+    //    Antes a foto subia à frente e uma digital cancelada deixava-a no
+    //    bucket sem registo nenhum — foto guardada por picagem que nunca
+    //    existiu, que é o oposto do que o RGPD pede.
+    let assertion = null;
+    if (desafio.options) {
+      try {
+        assertion = await startAuthentication({ optionsJSON: desafio.options });
+      } catch {
+        setError(t.errors.fingerprint);
+        setSending(false);
+        return;
+      }
+    }
+
+    // 2. Foto, quando esta picagem a exige.
     let photoPath: string | null = null;
     if (photo) {
       const supabase = createClient();
@@ -491,18 +506,6 @@ export default function EmployeeHome({
           return;
         }
         setError(t.errors.upload);
-        setSending(false);
-        return;
-      }
-    }
-
-    // 2. Impressão digital, quando o telemóvel está registado.
-    let assertion = null;
-    if (desafio.options) {
-      try {
-        assertion = await startAuthentication({ optionsJSON: desafio.options });
-      } catch {
-        setError(t.errors.fingerprint);
         setSending(false);
         return;
       }

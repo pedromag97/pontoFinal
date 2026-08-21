@@ -20,6 +20,8 @@ export default function RgpdPage() {
           label={t.dashboard.retentionButton}
           confirmText={t.dashboard.retentionConfirm}
           doneSuffix={t.dashboard.retentionDone}
+          orphansSuffix={t.dashboard.retentionOrphans}
+          challengesSuffix={t.dashboard.retentionChallenges}
         />
       </div>
 
