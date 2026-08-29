@@ -40,6 +40,7 @@
     "enrollBody": "Passas a picar o ponto com a tua impressão digital, sem tirar selfie de cada vez. A digital nunca sai do telemóvel — a empresa não a recebe nem guarda.",
     "enrollButton": "Registar com impressão digital",
     "enrollLater": "Agora não",
+    "enrollShort": "Registar telemóvel — picar sem selfie",
     "enrollDone": "Telemóvel registado ✅",
     "enrollError": "Não foi possível registar este telemóvel. Confirma que tens desbloqueio por digital ou código ativo.",
     "pushTitle": "Ativar lembretes?",

@@ -116,6 +116,9 @@ export default function EmployeeHome({
     "hidden" | "ask" | "done" | "error"
   >("hidden");
   const [enrollErro, setEnrollErro] = useState<string | null>(null);
+  // O aparelho suporta chaves de acesso? Sem isto oferecíamos um botão
+  // que nunca podia funcionar.
+  const [podeRegistar, setPodeRegistar] = useState(false);
   // Relógio do cartão principal. Só minutos, por isso um tique de 15s
   // chega e não gasta bateria a redesenhar o ecrã a cada segundo.
   const [agora, setAgora] = useState<Date | null>(null);
@@ -125,10 +128,14 @@ export default function EmployeeHome({
     return () => clearInterval(id);
   }, []);
 
-  // Convite para registar o telemóvel (uma vez por aparelho).
+  // Convite para registar o telemóvel (uma vez por aparelho). Dispensar
+  // esconde só o convite grande — a entrada discreta fica sempre, senão
+  // quem carregasse em "Agora não" nunca mais tinha por onde registar e
+  // ficava preso à selfie em todas as picagens.
   useEffect(() => {
-    if (temCredencial) return;
     if (typeof window === "undefined" || !window.PublicKeyCredential) return;
+    setPodeRegistar(true);
+    if (temCredencial) return;
     if (localStorage.getItem("enroll-dismissed") === "1") return;
     setEnrollBanner("ask");
   }, [temCredencial]);
@@ -1025,6 +1032,18 @@ export default function EmployeeHome({
         <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
           📡 {t.home.pendingNotice}
         </p>
+      )}
+
+      {/* Sempre disponível para quem ainda não registou, mesmo que tenha
+          dispensado o convite. É o único caminho para deixar de tirar
+          selfie em todas as picagens. */}
+      {!temCredencial && podeRegistar && enrollBanner !== "ask" && (
+        <button
+          onClick={registarDispositivo}
+          className="mb-3 w-full rounded-2xl bg-white py-3 text-center text-sm font-semibold text-marca-700 shadow-sm active:bg-slate-50"
+        >
+          👆 {t.home.enrollShort}
+        </button>
       )}
 
       <a
