@@ -11,6 +11,7 @@ import WorksiteAssignment from "@/components/admin/WorksiteAssignment";
 import PageHeader from "@/components/admin/PageHeader";
 import Avatar from "@/components/admin/Avatar";
 import SelfieRequestButton from "@/components/admin/SelfieRequestButton";
+import AvisarRegistoButton from "@/components/admin/AvisarRegistoButton";
 
 const t = getDictionary("pt");
 
@@ -169,7 +170,18 @@ export default function EmployeeManager({
 
   return (
     <div>
-      <PageHeader title={t.employees.title} />
+      <PageHeader title={t.employees.title}>
+        <AvisarRegistoButton
+          emFalta={
+            initialProfiles.filter(
+              (p) =>
+                p.role === "employee" &&
+                p.active &&
+                (devicesByEmployee[p.id] ?? 0) === 0
+            ).length
+          }
+        />
+      </PageHeader>
 
       <form
         onSubmit={createEmployee}
