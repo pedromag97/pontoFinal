@@ -59,13 +59,16 @@ async function limparSelfiesOrfas(admin: Admin): Promise<number> {
 }
 
 // Desafios de picagem: cada tentativa cria uma linha e nada as apagava.
-// Duram 5 minutos, por isso tudo o que tenha mais de um dia é lixo.
+// Valem 5 minutos, mas guardam-se o mesmo tempo que as fotos: são eles
+// que mostram as picagens tentadas e nunca concluídas, e essas só se
+// descobrem dias depois, quando as horas do mês não batem certo.
 async function limparDesafiosAntigos(admin: Admin): Promise<number> {
-  const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const limite = new Date();
+  limite.setMonth(limite.getMonth() - RETENTION_MONTHS);
   const { count, error } = await admin
     .from("punch_challenges")
     .delete({ count: "exact" })
-    .lt("created_at", ontem);
+    .lt("created_at", limite.toISOString());
   if (error) {
     console.error("[retencao] limpeza de desafios falhou:", error.message);
     return 0;

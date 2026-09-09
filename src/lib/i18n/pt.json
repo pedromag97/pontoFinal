@@ -168,11 +168,14 @@
     "clickToMark": "Clica para marcar férias, baixa ou falta",
     "clickToChange": "clica para retirar",
     "hasEntries": "Este dia já tem picagens. Apaga os registos primeiro, em Registos, se afinal foi uma ausência — senão ficavam as horas e a ausência ao mesmo tempo, e a ausência nem se via.",
-    "legendAbsence": "ausência (férias, baixa ou falta)",
+    "legendHoliday": "FE férias",
+    "legendSick": "B baixa médica",
+    "legendMissing": "FJ / FI falta justificada ou injustificada",
     "absenceMark": {
-      "ferias": "F",
+      "ferias": "FE",
       "baixa": "B",
-      "falta": "A"
+      "falta": "FJ",
+      "falta_injustificada": "FI"
     }
   },
   "nav": {
@@ -197,7 +200,8 @@
     "kinds": {
       "ferias": "Férias",
       "baixa": "Baixa médica",
-      "falta": "Falta justificada"
+      "falta": "Falta justificada",
+      "falta_injustificada": "Falta injustificada"
     },
     "from": "De",
     "to": "Até",
@@ -306,6 +310,9 @@
   },
   "entries": {
     "title": "Registos de ponto",
+    "lostTitle": "{n} picagem(ns) tentada(s) e não concluída(s)",
+    "lostBody": "A app pediu o registo ao servidor e nunca voltou com ele — a pessoa desistiu, ficou sem GPS, sem câmara, ou a digital falhou. A hora abaixo é a da tentativa: não existe registo nenhum a essa hora. Confirma com o funcionário e cria o registo à mão se for caso disso.",
+    "lostNeededPhoto": "pedia selfie",
     "from": "De",
     "to": "Até",
     "employee": "Funcionário",

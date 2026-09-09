@@ -47,6 +47,8 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  // Preenchido no caminho normal; fica nulo no offline, que não tem desafio.
+  let desafioId: string | null = null;
 
   if (offline) {
     // Sem rede não houve desafio nem assinatura possível: exige-se a selfie,
@@ -144,10 +146,10 @@ export async function POST(request: Request) {
         .eq("id", credencial.id);
     }
 
-    await admin
-      .from("punch_challenges")
-      .update({ used_at: new Date().toISOString() })
-      .eq("id", desafio.id);
+    // O desafio SÓ se marca como usado depois de o registo existir (mais
+    // abaixo). Marcá-lo aqui queimava-o mesmo quando a gravação falhava,
+    // e a pessoa tinha de recomeçar o processo todo sem perceber porquê.
+    desafioId = desafio.id;
   }
 
   const { data: criado, error } = await admin
@@ -173,6 +175,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "duplicado" }, { status: 409 });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (desafioId) {
+    await admin
+      .from("punch_challenges")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", desafioId);
   }
 
   // O pedido de selfie da gestão só se consome aqui, quando existe mesmo

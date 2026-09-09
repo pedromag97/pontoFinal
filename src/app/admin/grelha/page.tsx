@@ -272,7 +272,9 @@ export default async function GrelhaPage({
           <div className="flex flex-wrap items-center gap-3.5 text-xs text-slate-500">
             <Legenda cor="bg-emerald-50 border-emerald-200" texto={t.grid.legendFull} />
             <Legenda cor="bg-amber-50 border-amber-200" texto={t.grid.legendPartial} />
-            <Legenda cor="bg-sky-50 border-sky-200" texto={t.grid.legendAbsence} />
+            <Legenda cor="bg-green-100 border-green-300" texto={t.grid.legendHoliday} />
+            <Legenda cor="bg-yellow-100 border-yellow-300" texto={t.grid.legendSick} />
+            <Legenda cor="bg-red-100 border-red-300" texto={t.grid.legendMissing} />
             <Legenda cor="bg-slate-100 border-slate-200" texto={t.grid.legendNone} />
           </div>
           <span className="text-[13px] font-semibold text-slate-600">

@@ -11,12 +11,20 @@ import PageHeader from "@/components/admin/PageHeader";
 
 const t = getDictionary("pt");
 
-const KINDS: AbsenceKind[] = ["ferias", "baixa", "falta"];
+const KINDS: AbsenceKind[] = [
+  "ferias",
+  "baixa",
+  "falta",
+  "falta_injustificada",
+];
 
+// As duas faltas a vermelho, como pedido; a injustificada mais carregada
+// para se distinguir da justificada sem sair da mesma família de cor.
 const KIND_STYLE: Record<AbsenceKind, string> = {
-  ferias: "bg-sky-100 text-sky-800",
-  baixa: "bg-rose-100 text-rose-800",
-  falta: "bg-amber-100 text-amber-800",
+  ferias: "bg-green-100 text-green-800",
+  baixa: "bg-yellow-100 text-yellow-800",
+  falta: "bg-red-100 text-red-700",
+  falta_injustificada: "bg-red-200 text-red-900",
 };
 
 // Dias de calendário entre duas datas, inclusive.

@@ -3,6 +3,7 @@ import { getDictionary } from "@/lib/i18n";
 import {
   clockDriftMinutes,
   formatDate,
+  formatDateShort,
   formatTime,
   formatTimeSeconds,
   mapsUrl,
@@ -78,6 +79,57 @@ export default async function RegistosPage({
 
   const { data, error: queryError } = await query;
   if (queryError) console.error("[registos] query falhou:", queryError.message);
+
+  // Picagens tentadas e nunca concluídas: a app pediu o desafio ao
+  // servidor e nunca voltou com o registo. É assim que se perde uma
+  // entrada das 7h sem ninguém dar por isso até ao fim do mês.
+  let desafiosQuery = supabase
+    .from("punch_challenges")
+    .select("id, employee_id, entry_type, requires_photo, created_at")
+    .gte("created_at", `${from}T00:00:00`)
+    .lte("created_at", `${to}T23:59:59`)
+    .is("used_at", null)
+    .lt("expires_at", new Date().toISOString())
+    .neq("entry_type", "registo_dispositivo")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (employee) desafiosQuery = desafiosQuery.eq("employee_id", employee);
+  const { data: desafios } = await desafiosQuery;
+
+  // Cruzar com TODOS os registos do período (sem o filtro de estado, que
+  // é só da vista): um desafio seguido de registo do mesmo tipo poucos
+  // minutos depois foi uma repetição que correu bem, não uma perda.
+  const { data: paraCruzar } = await supabase
+    .from("time_entries")
+    .select("employee_id, entry_type, created_at")
+    .gte("entry_date", from)
+    .lte("entry_date", to);
+
+  const JANELA_MS = 15 * 60 * 1000;
+  const perdidas = ((desafios ?? []) as {
+    id: string;
+    employee_id: string;
+    entry_type: string;
+    requires_photo: boolean;
+    created_at: string;
+  }[]).filter((d) => {
+    const t0 = new Date(d.created_at).getTime();
+    return !((paraCruzar ?? []) as {
+      employee_id: string;
+      entry_type: string;
+      created_at: string;
+    }[]).some((e) => {
+      if (e.employee_id !== d.employee_id || e.entry_type !== d.entry_type) {
+        return false;
+      }
+      const dt = new Date(e.created_at).getTime() - t0;
+      return dt >= 0 && dt <= JANELA_MS;
+    });
+  });
+
+  const nomePorId = new Map(
+    ((employees ?? []) as Profile[]).map((p) => [p.id, p.full_name])
+  );
   const entries = (data ?? []) as TimeEntryWithName[];
 
   // Signed URLs (1h) para as miniaturas — bucket é privado.
@@ -108,6 +160,39 @@ export default async function RegistosPage({
   return (
     <div>
       <PageHeader title={t.entries.title} />
+
+      {perdidas.length > 0 && (
+        <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <h2 className="font-semibold text-amber-900">
+            ⚠️ {t.entries.lostTitle.replace("{n}", String(perdidas.length))}
+          </h2>
+          <p className="mb-3 mt-1 text-sm text-amber-800">
+            {t.entries.lostBody}
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {perdidas.map((d) => (
+              <li
+                key={d.id}
+                className="flex flex-wrap items-baseline gap-x-2 text-sm text-amber-900"
+              >
+                <span className="numerico font-semibold">
+                  {formatDateShort(d.created_at.slice(0, 10))}{" "}
+                  {formatTime(d.created_at)}
+                </span>
+                <span className="font-semibold">
+                  {nomePorId.get(d.employee_id) ?? "?"}
+                </span>
+                <span>{t.types[d.entry_type as EntryType]}</span>
+                {d.requires_photo && (
+                  <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold">
+                    {t.entries.lostNeededPhoto}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <form
         method="get"

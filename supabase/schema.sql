@@ -145,8 +145,10 @@ on conflict (holiday_date) do nothing;
 create table public.absences (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid not null references public.profiles (id) on delete cascade,
+  -- 'falta' = justificada; a injustificada e um tipo proprio porque conta
+  -- de forma diferente para salario e para efeitos disciplinares.
   kind text not null default 'ferias'
-    check (kind in ('ferias', 'baixa', 'falta')),
+    check (kind in ('ferias', 'baixa', 'falta', 'falta_injustificada')),
   start_date date not null,
   end_date date not null,
   note text,
@@ -441,9 +443,15 @@ alter table public.reminders_sent enable row level security;
 alter table public.employee_worksites enable row level security;
 alter table public.absences enable row level security;
 alter table public.webauthn_credentials enable row level security;
--- punch_challenges: só o servidor lê/escreve — RLS ligada e sem políticas.
 alter table public.punch_challenges enable row level security;
 alter table public.selfie_requests enable row level security;
+
+-- punch_challenges: a escrita é só do servidor (não há política de
+-- insert/update). A gestão lê, para ver as picagens tentadas e nunca
+-- concluídas — um desafio por usar e já expirado é uma picagem perdida.
+create policy "punch_challenges_select_admin"
+  on public.punch_challenges for select to authenticated
+  using (public.is_admin());
 
 -- selfie_requests: só a gestão. O funcionário NÃO vê os seus pedidos: se
 -- soubesse que a foto lhe foi pedida de propósito, quem está a tentar

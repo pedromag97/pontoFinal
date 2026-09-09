@@ -79,6 +79,7 @@ export async function GET(request: Request) {
     ferias: "FÉRIAS",
     baixa: "BAIXA MÉDICA",
     falta: "FALTA JUSTIFICADA",
+    falta_injustificada: "FALTA INJUSTIFICADA",
   };
   const { data: absenceRows } = await supabase
     .from("absences")

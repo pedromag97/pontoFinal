@@ -39,7 +39,12 @@ export interface TimeEntry {
   flags: Record<string, boolean>;
 }
 
-export type AbsenceKind = "ferias" | "baixa" | "falta";
+export type AbsenceKind =
+  | "ferias"
+  | "baixa"
+  /** Falta justificada. */
+  | "falta"
+  | "falta_injustificada";
 
 export interface Absence {
   id: string;

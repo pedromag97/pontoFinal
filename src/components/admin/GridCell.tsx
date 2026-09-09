@@ -10,7 +10,24 @@ import type { AbsenceKind } from "@/types";
 
 const t = getDictionary("pt");
 
-const TIPOS: AbsenceKind[] = ["ferias", "baixa", "falta"];
+const TIPOS: AbsenceKind[] = [
+  "ferias",
+  "baixa",
+  "falta",
+  "falta_injustificada",
+];
+
+// Cor da célula por tipo de ausência. As duas faltas a vermelho; a
+// injustificada mais carregada, para se distinguirem sem sair da mesma
+// família. Os tons são mais fortes que os dos dias trabalhados (verde e
+// âmbar pálidos), senão férias confundia-se com "dia completo" e baixa
+// com "incompleto" — as letras (FE, B) desempatam o resto.
+const COR: Record<AbsenceKind, string> = {
+  ferias: "bg-green-100 text-green-800",
+  baixa: "bg-yellow-100 text-yellow-800",
+  falta: "bg-red-100 text-red-700",
+  falta_injustificada: "bg-red-200 text-red-900",
+};
 
 export interface CelulaAusencia {
   id: string;
@@ -130,7 +147,7 @@ export default function GridCell({
     <td
       className={`numerico border-b border-slate-100 p-0 text-center text-xs whitespace-nowrap ${
         ausencia
-          ? "bg-sky-50 text-sky-700"
+          ? COR[ausencia.kind]
           : estado === "completo"
             ? "bg-emerald-50 text-emerald-700"
             : estado === "incompleto"
