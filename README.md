@@ -21,6 +21,7 @@ França), com painel de gestão em Portugal. **Toda a app está em português**
   períodos sobrepostos no mesmo funcionário). Nesses dias o funcionário não
   recebe lembretes, vê um aviso na app (podendo registar na mesma, se
   afinal trabalhar) e a folha de presença marca os dias.
+  Marcam-se na página Ausências (intervalos) ou **diretamente na Grelha do mês**: clicar numa célula marca férias, baixa ou falta naquele dia, e voltar a clicar retira. Num dia que faça parte de um intervalo, o diálogo mostra as datas do período e avisa que apagar remove o período inteiro. Dias com picagens recusam a marcação: as horas escondiam a ausência e ficavam os dois dados a contradizerem-se.
   Migração: `supabase/migrations/2026-08-14_ausencias.sql`.
 - **Painel de gestão:** funcionários, registos com foto/mapa/flags de fraude,
   horário de almoço por dia da semana, exportação CSV/Excel com horas

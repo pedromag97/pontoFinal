@@ -9,6 +9,7 @@ import {
 } from "@/lib/format";
 import type { Absence, Holiday, TimeEntryWithName } from "@/types";
 import Avatar from "@/components/admin/Avatar";
+import GridCell from "@/components/admin/GridCell";
 import PageHeader from "@/components/admin/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -134,7 +135,17 @@ export default async function GrelhaPage({
         return {
           data: dia.data,
           naoUtil: dia.naoUtil,
-          ausencia: ausencia?.kind ?? null,
+          // A ausência inteira (não só o tipo): a célula precisa do id
+          // para a apagar e das datas para avisar quando é um intervalo.
+          ausencia: ausencia
+            ? {
+                id: ausencia.id,
+                kind: ausencia.kind,
+                start_date: ausencia.start_date,
+                end_date: ausencia.end_date,
+              }
+            : null,
+          temRegistos: !!registos && registos.length > 0,
           estado,
           texto:
             horas !== null && horas !== undefined
@@ -237,19 +248,16 @@ export default async function GrelhaPage({
                     </span>
                   </td>
                   {linha.celulas.map((celula) => (
-                    <td
+                    <GridCell
                       key={celula.data}
-                      title={celula.ausencia ? t.absences.kinds[celula.ausencia] : undefined}
-                      className={`numerico border-b border-slate-100 px-1 py-3 text-center text-xs whitespace-nowrap ${
-                        celula.estado === "completo"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : celula.estado === "incompleto"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-slate-100 text-slate-400"
-                      }`}
-                    >
-                      {celula.texto}
-                    </td>
+                      employeeId={linha.id}
+                      employeeName={linha.nome}
+                      data={celula.data}
+                      texto={celula.texto}
+                      estado={celula.estado}
+                      ausencia={celula.ausencia}
+                      temRegistos={celula.temRegistos}
+                    />
                   ))}
                   <td className="numerico border-b border-slate-100 px-4 py-3 text-right text-sm font-medium whitespace-nowrap text-slate-900">
                     {linha.total > 0 ? formatHoursMinutes(linha.total) : "—"}
@@ -264,6 +272,7 @@ export default async function GrelhaPage({
           <div className="flex flex-wrap items-center gap-3.5 text-xs text-slate-500">
             <Legenda cor="bg-emerald-50 border-emerald-200" texto={t.grid.legendFull} />
             <Legenda cor="bg-amber-50 border-amber-200" texto={t.grid.legendPartial} />
+            <Legenda cor="bg-sky-50 border-sky-200" texto={t.grid.legendAbsence} />
             <Legenda cor="bg-slate-100 border-slate-200" texto={t.grid.legendNone} />
           </div>
           <span className="text-[13px] font-semibold text-slate-600">
