@@ -127,6 +127,31 @@ export default async function RegistosPage({
     });
   });
 
+  // Duas tentativas do mesmo tipo com minutos de intervalo é a pessoa a
+  // insistir no mesmo movimento, não duas picagens perdidas. Junta-se
+  // tudo o que caia na mesma janela e conta-se as tentativas.
+  const JANELA_REPETICAO_MS = 10 * 60 * 1000;
+  const agrupadas: (typeof perdidas[number] & { tentativas: number })[] = [];
+  // Vêm da consulta por ordem decrescente: a mais antiga do grupo é a
+  // última a chegar, e é essa a hora que interessa mostrar.
+  for (const d of perdidas) {
+    const anterior = agrupadas.find(
+      (g) =>
+        g.employee_id === d.employee_id &&
+        g.entry_type === d.entry_type &&
+        Math.abs(
+          new Date(g.created_at).getTime() - new Date(d.created_at).getTime()
+        ) <= JANELA_REPETICAO_MS
+    );
+    if (anterior) {
+      anterior.tentativas += 1;
+      anterior.created_at = d.created_at;
+      anterior.requires_photo = anterior.requires_photo || d.requires_photo;
+    } else {
+      agrupadas.push({ ...d, tentativas: 1 });
+    }
+  }
+
   const nomePorId = new Map(
     ((employees ?? []) as Profile[]).map((p) => [p.id, p.full_name])
   );
@@ -161,16 +186,16 @@ export default async function RegistosPage({
     <div>
       <PageHeader title={t.entries.title} />
 
-      {perdidas.length > 0 && (
+      {agrupadas.length > 0 && (
         <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <h2 className="font-semibold text-amber-900">
-            ⚠️ {t.entries.lostTitle.replace("{n}", String(perdidas.length))}
+            ⚠️ {t.entries.lostTitle.replace("{n}", String(agrupadas.length))}
           </h2>
           <p className="mb-3 mt-1 text-sm text-amber-800">
             {t.entries.lostBody}
           </p>
           <ul className="flex flex-col gap-1.5">
-            {perdidas.map((d) => (
+            {agrupadas.map((d) => (
               <li
                 key={d.id}
                 className="flex flex-wrap items-baseline gap-x-2 text-sm text-amber-900"
@@ -186,6 +211,14 @@ export default async function RegistosPage({
                 {d.requires_photo && (
                   <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold">
                     {t.entries.lostNeededPhoto}
+                  </span>
+                )}
+                {d.tentativas > 1 && (
+                  <span className="text-xs">
+                    {t.entries.lostRetries.replace(
+                      "{n}",
+                      String(d.tentativas)
+                    )}
                   </span>
                 )}
               </li>

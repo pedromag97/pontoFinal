@@ -313,6 +313,7 @@
     "lostTitle": "{n} picagem(ns) tentada(s) e não concluída(s)",
     "lostBody": "A app pediu o registo ao servidor e nunca voltou com ele — a pessoa desistiu, ficou sem GPS, sem câmara, ou a digital falhou. A hora abaixo é a da tentativa: não existe registo nenhum a essa hora. Confirma com o funcionário e cria o registo à mão se for caso disso.",
     "lostNeededPhoto": "pedia selfie",
+    "lostRetries": "· {n} tentativas seguidas",
     "from": "De",
     "to": "Até",
     "employee": "Funcionário",
