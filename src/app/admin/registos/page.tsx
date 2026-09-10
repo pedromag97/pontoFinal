@@ -221,6 +221,7 @@ export default async function RegistosPage({
             {!verVistas && (
               <DismissLostButton
                 todas
+                linhas={agrupadas.length}
                 ids={agrupadas.flatMap((d) => d.ids)}
               />
             )}

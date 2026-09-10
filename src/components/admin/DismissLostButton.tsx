@@ -12,10 +12,15 @@ const t = getDictionary("pt");
 // tentativas seguidas do mesmo movimento.
 export default function DismissLostButton({
   ids,
+  linhas,
   repor = false,
   todas = false,
 }: {
   ids: string[];
+  /** Quantas linhas o painel mostra. Os ids são mais: uma linha junta
+   *  as tentativas seguidas do mesmo movimento, e a confirmação tem de
+   *  falar do que se vê, não do que está por baixo. */
+  linhas?: number;
   /** Desfazer: volta a mostrar no painel. */
   repor?: boolean;
   /** Botão de "marcar todas" no cabeçalho, com confirmação. */
@@ -31,7 +36,7 @@ export default function DismissLostButton({
         title: t.entries.lostDismissAll,
         message: t.entries.lostDismissAllConfirm.replace(
           "{n}",
-          String(ids.length)
+          String(linhas ?? ids.length)
         ),
         confirmLabel: t.entries.lostDismiss,
       });
