@@ -240,8 +240,17 @@ create table public.punch_challenges (
   requires_photo boolean not null,
   expires_at timestamptz not null,
   used_at timestamptz,
+  -- Um desafio por usar e já expirado é uma picagem que se perdeu. A
+  -- gestão vê-as em Registos e marca-as como vistas para as arrumar —
+  -- sem apagar: fica quem arrumou e quando.
+  dismissed_at timestamptz,
+  dismissed_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+create index punch_challenges_perdidas_idx
+  on public.punch_challenges (created_at desc)
+  where used_at is null and dismissed_at is null;
 
 create index punch_challenges_employee_idx
   on public.punch_challenges (employee_id, expires_at);

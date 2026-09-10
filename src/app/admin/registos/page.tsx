@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n";
 import {
@@ -14,6 +15,7 @@ import type { EntryType, Profile, TimeEntryWithName, Worksite } from "@/types";
 import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
 import WorksitePicker from "@/components/admin/WorksitePicker";
 import DayGroup from "@/components/admin/DayGroup";
+import DismissLostButton from "@/components/admin/DismissLostButton";
 import AddEntryForm from "@/components/admin/AddEntryForm";
 import EditTimeButton from "@/components/admin/EditTimeButton";
 import ValidateToggle from "@/components/admin/ValidateToggle";
@@ -42,6 +44,7 @@ export default async function RegistosPage({
     to?: string;
     employee?: string;
     status?: string;
+    vistas?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -50,6 +53,9 @@ export default async function RegistosPage({
     : `${monthWorksite()}-01`;
   const to = DATE_RE.test(params.to ?? "") ? params.to! : todayWorksite();
   const employee = params.employee ?? "";
+  // ?vistas=1 mostra as picagens perdidas já arrumadas, para desfazer
+  // um "visto" dado por engano.
+  const verVistas = params.vistas === "1";
   const status =
     params.status === "pending" || params.status === "validated"
       ? params.status
@@ -93,6 +99,9 @@ export default async function RegistosPage({
     .neq("entry_type", "registo_dispositivo")
     .order("created_at", { ascending: false })
     .limit(200);
+  desafiosQuery = verVistas
+    ? desafiosQuery.not("dismissed_at", "is", null)
+    : desafiosQuery.is("dismissed_at", null);
   if (employee) desafiosQuery = desafiosQuery.eq("employee_id", employee);
   const { data: desafios } = await desafiosQuery;
 
@@ -131,7 +140,10 @@ export default async function RegistosPage({
   // insistir no mesmo movimento, não duas picagens perdidas. Junta-se
   // tudo o que caia na mesma janela e conta-se as tentativas.
   const JANELA_REPETICAO_MS = 10 * 60 * 1000;
-  const agrupadas: (typeof perdidas[number] & { tentativas: number })[] = [];
+  const agrupadas: (typeof perdidas[number] & {
+    tentativas: number;
+    ids: string[];
+  })[] = [];
   // Vêm da consulta por ordem decrescente: a mais antiga do grupo é a
   // última a chegar, e é essa a hora que interessa mostrar.
   for (const d of perdidas) {
@@ -147,8 +159,9 @@ export default async function RegistosPage({
       anterior.tentativas += 1;
       anterior.created_at = d.created_at;
       anterior.requires_photo = anterior.requires_photo || d.requires_photo;
+      anterior.ids.push(d.id);
     } else {
-      agrupadas.push({ ...d, tentativas: 1 });
+      agrupadas.push({ ...d, tentativas: 1, ids: [d.id] });
     }
   }
 
@@ -187,13 +200,36 @@ export default async function RegistosPage({
       <PageHeader title={t.entries.title} />
 
       {agrupadas.length > 0 && (
-        <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <h2 className="font-semibold text-amber-900">
-            ⚠️ {t.entries.lostTitle.replace("{n}", String(agrupadas.length))}
-          </h2>
-          <p className="mb-3 mt-1 text-sm text-amber-800">
-            {t.entries.lostBody}
-          </p>
+        <section
+          className={`mb-4 rounded-2xl border p-4 ${
+            verVistas
+              ? "border-slate-200 bg-slate-50"
+              : "border-amber-200 bg-amber-50"
+          }`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2
+              className={verVistas ? "font-semibold text-slate-700" : "font-semibold text-amber-900"}
+            >
+              {verVistas
+                ? t.entries.lostSeenTitle.replace(
+                    "{n}",
+                    String(agrupadas.length)
+                  )
+                : `⚠️ ${t.entries.lostTitle.replace("{n}", String(agrupadas.length))}`}
+            </h2>
+            {!verVistas && (
+              <DismissLostButton
+                todas
+                ids={agrupadas.flatMap((d) => d.ids)}
+              />
+            )}
+          </div>
+          {!verVistas && (
+            <p className="mb-3 mt-1 text-sm text-amber-800">
+              {t.entries.lostBody}
+            </p>
+          )}
           <ul className="flex flex-col gap-1.5">
             {agrupadas.map((d) => (
               <li
@@ -221,10 +257,38 @@ export default async function RegistosPage({
                     )}
                   </span>
                 )}
+                <DismissLostButton ids={d.ids} repor={verVistas} />
               </li>
             ))}
           </ul>
+          <p className="mt-3 text-xs">
+            <Link
+              href={`/admin/registos?${new URLSearchParams({
+                from,
+                to,
+                ...(employee ? { employee } : {}),
+                ...(verVistas ? {} : { vistas: "1" }),
+              })}`}
+              className="font-semibold text-slate-500 underline underline-offset-2"
+            >
+              {verVistas ? t.entries.lostBackToOpen : t.entries.lostSeenLink}
+            </Link>
+          </p>
         </section>
+      )}
+
+      {/* Sem nada por arrumar, o caminho para as vistas tem de existir na
+          mesma — senão um "visto" dado por engano não tinha volta. */}
+      {agrupadas.length === 0 && verVistas && (
+        <p className="mb-4 text-sm text-slate-500">
+          {t.entries.lostNoneSeen}{" "}
+          <Link
+            href={`/admin/registos?${new URLSearchParams({ from, to })}`}
+            className="font-semibold underline underline-offset-2"
+          >
+            {t.entries.lostBackToOpen}
+          </Link>
+        </p>
       )}
 
       <form
