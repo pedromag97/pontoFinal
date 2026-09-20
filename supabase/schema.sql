@@ -238,6 +238,10 @@ create table public.punch_challenges (
   challenge text not null,
   entry_type text not null,
   requires_photo boolean not null,
+  -- A app não conseguiu usar a digital (chave perdida no aparelho, por
+  -- exemplo): este desafio aceita o registo sem assinatura, a troco da
+  -- selfie. O registo fica marcado e não é validado automaticamente.
+  fingerprint_waived boolean not null default false,
   expires_at timestamptz not null,
   used_at timestamptz,
   -- Um desafio por usar e já expirado é uma picagem que se perdeu. A

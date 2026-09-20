@@ -119,6 +119,10 @@ export default function EmployeeHome({
   // O aparelho suporta chaves de acesso? Sem isto oferecíamos um botão
   // que nunca podia funcionar.
   const [podeRegistar, setPodeRegistar] = useState(false);
+  // A digital falhou nesta picagem. Sem isto, quem perde a chave de
+  // acesso no telemóvel fica trancado fora da app: o servidor exige
+  // assinatura, o aparelho não a consegue dar, e não há saída.
+  const [digitalFalhou, setDigitalFalhou] = useState(false);
   // Relógio do cartão principal. Só minutos, por isso um tique de 15s
   // chega e não gasta bateria a redesenhar o ecrã a cada segundo.
   const [agora, setAgora] = useState<Date | null>(null);
@@ -392,6 +396,7 @@ export default function EmployeeHome({
     setError(null);
     setDesafio(null);
     setPosition(null);
+    setDigitalFalhou(false);
     setStep("preparing");
 
     let pos: Position;
@@ -430,6 +435,36 @@ export default function EmployeeHome({
     } catch {
       setDesafio(desafioOffline);
       setStep("capture");
+    }
+  }
+
+  // Recomeçar o movimento a dizer ao servidor que a digital não dá. Ele
+  // emite um desafio que dispensa a assinatura mas exige selfie — e marca
+  // o registo, que deixa de ser validado automaticamente.
+  async function tentarComSelfie() {
+    if (!position) return;
+    setError(null);
+    setDigitalFalhou(false);
+    setStep("preparing");
+    try {
+      const res = await fetch("/api/registo/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entry_type: entryType,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          sem_digital: true,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setDesafio((await res.json()) as Desafio);
+      setPhoto(null);
+      setStep("capture");
+    } catch {
+      setError(t.errors.network);
+      setDigitalFalhou(true);
+      setStep("preview");
     }
   }
 
@@ -492,6 +527,7 @@ export default function EmployeeHome({
         assertion = await startAuthentication({ optionsJSON: desafio.options });
       } catch {
         setError(t.errors.fingerprint);
+        setDigitalFalhou(true);
         setSending(false);
         return;
       }
@@ -684,6 +720,22 @@ export default function EmployeeHome({
           <p className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </p>
+        )}
+
+        {/* A digital não deu. Em vez de deixar a pessoa a repetir sem fim,
+            oferece-se a selfie: o registo passa, fica marcado, e a gestão
+            vê porquê. Perder a picagem seria pior do que revê-la. */}
+        {digitalFalhou && (
+          <div className="mb-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="mb-2">{t.preview.fingerprintFailed}</p>
+            <button
+              onClick={tentarComSelfie}
+              disabled={sending}
+              className="w-full rounded-xl bg-amber-600 py-2.5 font-semibold text-white active:bg-amber-700 disabled:opacity-50"
+            >
+              {t.preview.useSelfieInstead}
+            </button>
+          </div>
         )}
 
         {desafio?.options && (

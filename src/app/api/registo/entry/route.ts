@@ -49,6 +49,8 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   // Preenchido no caminho normal; fica nulo no offline, que não tem desafio.
   let desafioId: string | null = null;
+  // O registo foi feito sem a digital, com selfie no lugar dela?
+  let semDigitalId = false;
 
   if (offline) {
     // Sem rede não houve desafio nem assinatura possível: exige-se a selfie,
@@ -92,7 +94,13 @@ export async function POST(request: Request) {
       .select("*")
       .eq("employee_id", profile.id);
 
-    if ((credenciais ?? []).length > 0) {
+    // Saída por selfie: o desafio foi emitido depois de a app dizer que
+    // não conseguia usar a digital. Aceita-se sem assinatura, mas a foto
+    // é obrigatória (garantida acima) e o registo fica para revisão.
+    const semDigital = desafio.fingerprint_waived === true;
+    if (semDigital) semDigitalId = true;
+
+    if (!semDigital && (credenciais ?? []).length > 0) {
       const resposta = body?.assertion as AuthenticationResponseJSON | undefined;
       if (!resposta) {
         return NextResponse.json(
@@ -184,6 +192,27 @@ export async function POST(request: Request) {
       .eq("id", desafioId);
   }
 
+  // Marcar depois da inserção: o trigger reescreve flags por inteiro, por
+  // isso não adianta mandá-las no insert. Aproveita-se para retirar a
+  // validação automática — quem pica sem digital tem de ser visto.
+  let entrada = criado;
+  if (semDigitalId) {
+    const { data: revisto } = await admin
+      .from("time_entries")
+      .update({
+        flags: {
+          ...((criado.flags as Record<string, unknown>) ?? {}),
+          fingerprint_falhou: true,
+        },
+        validated_at: null,
+        validated_by: null,
+      })
+      .eq("id", criado.id)
+      .select()
+      .single();
+    if (revisto) entrada = revisto;
+  }
+
   // O pedido de selfie da gestão só se consome aqui, quando existe mesmo
   // um registo com foto. Consumi-lo ao emitir o desafio deixava fugir:
   // bastava pedir desafio, ver que pedia foto, desistir, e pedir outro.
@@ -198,5 +227,5 @@ export async function POST(request: Request) {
       .is("consumed_at", null);
   }
 
-  return NextResponse.json({ entry: criado });
+  return NextResponse.json({ entry: entrada });
 }

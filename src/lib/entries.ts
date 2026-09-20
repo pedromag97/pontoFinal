@@ -9,6 +9,8 @@ export function isSuspicious(entry: TimeEntry): boolean {
     !!flags.low_gps_accuracy ||
     !!flags.clock_drift ||
     !!flags.out_of_area ||
-    !!flags.bad_client_clock
+    !!flags.bad_client_clock ||
+    // Picou sem a digital, com selfie no lugar dela: tem de ser visto.
+    !!flags.fingerprint_falhou
   );
 }

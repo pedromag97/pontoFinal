@@ -427,9 +427,11 @@ export default async function RegistosPage({
               const offline = !!flags.offline_sync;
               const badClock = !!flags.bad_client_clock;
               const purged = !!flags.photo_purged;
+              // Picou com selfie porque a digital não funcionou no aparelho.
+              const semDigital = !!flags.fingerprint_falhou;
               const rejected = entry.rejected_at !== null;
               const suspicious =
-                !rejected && (lowGps || clockDrift || outOfArea);
+                !rejected && (lowGps || clockDrift || outOfArea || semDigital);
 
               return (
                 <tr
@@ -531,6 +533,7 @@ export default async function RegistosPage({
                       {clockDrift && <Badge>{t.entries.flagClockDrift}</Badge>}
                       {outOfArea && <Badge>{t.entries.flagOutOfArea}</Badge>}
                       {badClock && <Badge>{t.entries.flagBadClock}</Badge>}
+                      {semDigital && <Badge>{t.entries.flagNoFingerprint}</Badge>}
                       {entry.manual && (
                         <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
                           {t.entries.flagManual}

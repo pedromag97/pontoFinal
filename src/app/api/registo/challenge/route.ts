@@ -29,6 +29,11 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const entryType = body?.entry_type as EntryType;
+  // A app já tentou a digital neste movimento e não conseguiu (chave
+  // perdida no aparelho, sensor avariado). Em vez de a deixar encravada,
+  // dá-se saída pela selfie — que é prova mais forte de identidade,
+  // não mais fraca. Fica marcado e não é validado automaticamente.
+  const semDigital = body?.sem_digital === true;
   const latitude = Number(body?.latitude);
   const longitude = Number(body?.longitude);
   if (
@@ -55,7 +60,7 @@ export async function POST(request: Request) {
     temCredencial,
   });
 
-  const options = temCredencial
+  const options = temCredencial && !semDigital
     ? await generateAuthenticationOptions({
         rpID,
         userVerification: "required",
@@ -76,7 +81,9 @@ export async function POST(request: Request) {
       employee_id: profile.id,
       challenge,
       entry_type: entryType,
-      requires_photo: politica.requiresPhoto,
+      // A saída por selfie só vale a troco da foto.
+      requires_photo: politica.requiresPhoto || semDigital,
+      fingerprint_waived: semDigital && temCredencial,
       expires_at: new Date(Date.now() + CHALLENGE_TTL_MIN * 60_000).toISOString(),
     })
     .select("id")
@@ -87,7 +94,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     challengeId: linha.id,
-    requiresPhoto: politica.requiresPhoto,
+    requiresPhoto: politica.requiresPhoto || semDigital,
     // O motivo verdadeiro fica só no servidor (ver motivoParaCliente).
     motivo: motivoParaCliente(politica.motivo),
     options, // null quando não há dispositivo registado
