@@ -67,6 +67,16 @@
       "saida": "🌇"
     }
   },
+  "problem": {
+    "button": "A app não me deixa registar",
+    "title": "Avisar a gestão",
+    "body": "Isto avisa a gestão de que não estás a conseguir registar, com os detalhes técnicos do que falhou. Eles tratam do teu registo — não percas o dia por causa disto.",
+    "placeholder": "O que aconteceu? (opcional) ex.: pede a digital e dá erro",
+    "send": "Enviar aviso",
+    "sending": "A enviar…",
+    "sent": "Aviso enviado. A gestão vai tratar do teu registo. ✅",
+    "error": "Não foi possível enviar. Verifica a ligação e tenta de novo."
+  },
   "sheet": {
     "title": "Folha do mês",
     "download": "Descarregar folha para assinar (PDF)",
@@ -312,6 +322,10 @@
   },
   "entries": {
     "title": "Registos de ponto",
+    "reportsTitle": "{n} funcionário(s) a avisar que não consegue(m) registar",
+    "reportsBody": "Avisos enviados da app. Confirma com a pessoa, resolve o que a impede (tipicamente remover o telemóvel registado em Gestão › Funcionários) e cria os registos em falta à mão.",
+    "reportNoDevice": "sem telemóvel registado",
+    "reportResolve": "Resolvido",
     "lostTitle": "{n} picagem(ns) tentada(s) e não concluída(s)",
     "lostBody": "A app pediu o registo ao servidor e nunca voltou com ele — a pessoa desistiu, ficou sem GPS, sem câmara, ou a digital falhou. A hora abaixo é a da tentativa: não existe registo nenhum a essa hora. Confirma com o funcionário e cria o registo à mão se for caso disso.",
     "lostNeededPhoto": "pedia selfie",

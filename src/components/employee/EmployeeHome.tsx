@@ -33,6 +33,7 @@ import type {
 import CameraCapture from "./CameraCapture";
 import ConsentScreen from "./ConsentScreen";
 import LogoutButton from "@/components/LogoutButton";
+import ProblemButton from "./ProblemButton";
 
 const t = getDictionary("pt");
 
@@ -725,6 +726,19 @@ export default function EmployeeHome({
         {/* A digital não deu. Em vez de deixar a pessoa a repetir sem fim,
             oferece-se a selfie: o registo passa, fica marcado, e a gestão
             vê porquê. Perder a picagem seria pior do que revê-la. */}
+        {error && (
+          <ProblemButton
+            entryType={entryType}
+            contexto={{
+              passo: "confirmacao",
+              erro: error,
+              digital_falhou: digitalFalhou,
+              gps: geoCausa ?? (position ? "ok" : "sem posicao"),
+              tem_telemovel_registado: temCredencial,
+            }}
+          />
+        )}
+
         {digitalFalhou && (
           <div className="mb-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <p className="mb-2">{t.preview.fingerprintFailed}</p>
@@ -1089,6 +1103,18 @@ export default function EmployeeHome({
       {/* Sempre disponível para quem ainda não registou, mesmo que tenha
           dispensado o convite. É o único caminho para deixar de tirar
           selfie em todas as picagens. */}
+      {/* Válvula de escape: sempre ao alcance, sem depender de GPS,
+          câmara ou digital — é precisamente quando esses falham que ela
+          faz falta. */}
+      <ProblemButton
+        entryType={nextType ?? null}
+        contexto={{
+          tem_telemovel_registado: temCredencial,
+          gps: gpsAviso ?? "ok",
+          registos_hoje: todayLog.length,
+        }}
+      />
+
       {!temCredencial && podeRegistar && enrollBanner !== "ask" && (
         <button
           onClick={registarDispositivo}

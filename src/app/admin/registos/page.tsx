@@ -16,6 +16,7 @@ import DeleteEntryButton from "@/components/admin/DeleteEntryButton";
 import WorksitePicker from "@/components/admin/WorksitePicker";
 import DayGroup from "@/components/admin/DayGroup";
 import DismissLostButton from "@/components/admin/DismissLostButton";
+import ResolveReportButton from "@/components/admin/ResolveReportButton";
 import AddEntryForm from "@/components/admin/AddEntryForm";
 import EditTimeButton from "@/components/admin/EditTimeButton";
 import ValidateToggle from "@/components/admin/ValidateToggle";
@@ -104,6 +105,16 @@ export default async function RegistosPage({
     : desafiosQuery.is("dismissed_at", null);
   if (employee) desafiosQuery = desafiosQuery.eq("employee_id", employee);
   const { data: desafios } = await desafiosQuery;
+
+  // Avisos de "a app não me deixa registar". Não são filtrados pelo
+  // período: um funcionário encravado é urgente agora, não no mês em que
+  // se anda a olhar.
+  const { data: avisos } = await supabase
+    .from("problem_reports")
+    .select("id, employee_id, entry_type, note, context, created_at")
+    .is("resolved_at", null)
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   // Cruzar com TODOS os registos do período (sem o filtro de estado, que
   // é só da vista): um desafio seguido de registo do mesmo tipo poucos
@@ -198,6 +209,56 @@ export default async function RegistosPage({
   return (
     <div>
       <PageHeader title={t.entries.title} />
+
+      {(avisos ?? []).length > 0 && (
+        <section className="mb-4 rounded-2xl border border-red-300 bg-red-50 p-4">
+          <h2 className="font-semibold text-red-900">
+            🚨 {t.entries.reportsTitle.replace(
+              "{n}",
+              String((avisos ?? []).length)
+            )}
+          </h2>
+          <p className="mb-3 mt-1 text-sm text-red-800">
+            {t.entries.reportsBody}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {((avisos ?? []) as {
+              id: string;
+              employee_id: string;
+              entry_type: string | null;
+              note: string | null;
+              context: Record<string, unknown>;
+              created_at: string;
+            }[]).map((a) => (
+              <li key={a.id} className="text-sm text-red-900">
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="numerico font-semibold">
+                    {formatDateShort(a.created_at.slice(0, 10))}{" "}
+                    {formatTime(a.created_at)}
+                  </span>
+                  <span className="font-semibold">
+                    {nomePorId.get(a.employee_id) ?? "?"}
+                  </span>
+                  {a.entry_type && (
+                    <span>{t.types[a.entry_type as EntryType]}</span>
+                  )}
+                  {a.context?.telemovel_registado === false && (
+                    <span className="rounded-full bg-red-200 px-2 py-0.5 text-xs font-semibold">
+                      {t.entries.reportNoDevice}
+                    </span>
+                  )}
+                  <ResolveReportButton id={a.id} />
+                </span>
+                {a.note && (
+                  <span className="mt-0.5 block text-xs italic text-red-800">
+                    “{a.note}”
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {agrupadas.length > 0 && (
         <section

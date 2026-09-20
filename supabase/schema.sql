@@ -195,6 +195,23 @@ create table public.reminders_sent (
   primary key (employee_id, entry_date, kind)
 );
 
+-- Avisos de "a app não me deixa picar". Válvula de escape: não depende de
+-- GPS, câmara nem digital, e guarda o contexto técnico automaticamente.
+create table public.problem_reports (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references public.profiles (id) on delete cascade,
+  entry_type text,
+  note text,
+  context jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  resolved_by uuid references public.profiles (id) on delete set null
+);
+
+create index problem_reports_abertos_idx
+  on public.problem_reports (created_at desc)
+  where resolved_at is null;
+
 -- NOTA: o agendamento dos lembretes (pg_cron → /api/cron/reminders) está em
 -- supabase/migrations/2026-08-11_lembretes.sql, parte 2 — requer o CRON_SECRET.
 
@@ -458,6 +475,17 @@ alter table public.absences enable row level security;
 alter table public.webauthn_credentials enable row level security;
 alter table public.punch_challenges enable row level security;
 alter table public.selfie_requests enable row level security;
+alter table public.problem_reports enable row level security;
+
+-- problem_reports: a gestão lê e arruma; a criação é do servidor, que
+-- junta o contexto técnico ao aviso.
+create policy "problem_reports_select_admin"
+  on public.problem_reports for select to authenticated
+  using (public.is_admin());
+
+create policy "problem_reports_update_admin"
+  on public.problem_reports for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
 
 -- punch_challenges: a escrita é só do servidor (não há política de
 -- insert/update). A gestão lê, para ver as picagens tentadas e nunca
