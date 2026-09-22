@@ -64,6 +64,8 @@ export async function POST(request: Request) {
     ? await generateAuthenticationOptions({
         rpID,
         userVerification: "required",
+        // O cliente desiste aos 30s; pedir ao browser que faça o mesmo.
+        timeout: 30_000,
         allowCredentials: (credenciais ?? []).map((c) => ({
           id: c.credential_id as string,
         })),

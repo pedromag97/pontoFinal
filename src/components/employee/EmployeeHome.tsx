@@ -18,7 +18,11 @@ import {
   syncPending,
 } from "@/lib/offline";
 import { enablePush, pushSupported } from "@/lib/push";
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import {
+  startAuthentication,
+  startRegistration,
+  WebAuthnAbortService,
+} from "@simplewebauthn/browser";
 import type {
   PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
@@ -38,6 +42,11 @@ import ProblemButton from "./ProblemButton";
 const t = getDictionary("pt");
 
 type Step = "home" | "preparing" | "capture" | "preview" | "success";
+
+// Quanto esperar pela digital antes de desistir e oferecer a selfie.
+// Generoso para quem demora a encostar o dedo, curto o suficiente para
+// ninguém ficar à espera de uma caixa que nunca vai aparecer.
+const DIGITAL_TIMEOUT_MS = 30_000;
 
 // O que o servidor decidiu para esta picagem: se pede selfie e, quando o
 // telemóvel está registado, o desafio a assinar com a impressão digital.
@@ -525,7 +534,19 @@ export default function EmployeeHome({
     let assertion = null;
     if (desafio.options) {
       try {
-        assertion = await startAuthentication({ optionsJSON: desafio.options });
+        // Com limite de tempo. Em alguns telemóveis a caixa da digital
+        // nunca chega a aparecer e a promessa fica pendurada para
+        // sempre: sem isto, a app ficava parada em "A enviar…" e a
+        // pessoa não tinha sequer o erro que lhe abre a saída.
+        assertion = await Promise.race([
+          startAuthentication({ optionsJSON: desafio.options }),
+          new Promise<never>((_, rejeitar) =>
+            setTimeout(() => {
+              WebAuthnAbortService.cancelCeremony();
+              rejeitar(new Error("timeout"));
+            }, DIGITAL_TIMEOUT_MS)
+          ),
+        ]);
       } catch {
         setError(t.errors.fingerprint);
         setDigitalFalhou(true);
