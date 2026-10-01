@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 
 const t = getDictionary("pt");
@@ -27,7 +28,7 @@ export default function ValidateToggle({
       body: JSON.stringify({ validated: !validated }),
     });
     setBusy(false);
-    if (res.ok) router.refresh();
+    if (res.ok) await atualizarAdmin(router);
   }
 
   return (

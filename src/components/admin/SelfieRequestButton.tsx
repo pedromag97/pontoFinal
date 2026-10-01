@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
@@ -41,7 +42,7 @@ export default function SelfieRequestButton({
         .eq("employee_id", employeeId)
         .is("consumed_at", null);
       setBusy(false);
-      router.refresh();
+      await atualizarAdmin(router);
       return;
     }
 
@@ -68,7 +69,7 @@ export default function SelfieRequestButton({
       });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   return (

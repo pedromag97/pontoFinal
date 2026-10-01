@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import type { Worksite } from "@/types";
@@ -65,7 +66,7 @@ export default function WorksiteAssignment({
       else proximo.add(worksiteId);
       return proximo;
     });
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   const nomes = worksites

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
@@ -116,7 +117,7 @@ export default function WorksiteManager({
     setCoords("");
     setRadius("500");
     setMobile(false);
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   async function update(id: string, values: Partial<Worksite>) {
@@ -132,7 +133,7 @@ export default function WorksiteManager({
       setMessage({ ok: false, text: t.worksites.error });
       return false;
     }
-    router.refresh();
+    await atualizarAdmin(router);
     return true;
   }
 
@@ -186,7 +187,7 @@ export default function WorksiteManager({
       setMessage({ ok: false, text: t.worksites.error });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   return (

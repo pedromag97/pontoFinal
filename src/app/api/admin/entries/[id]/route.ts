@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lisbonToUtcIso } from "@/lib/format";
@@ -49,6 +50,7 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    revalidatePath("/admin", "layout");
     return NextResponse.json({ ok: true });
   }
 
@@ -86,6 +88,7 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    revalidatePath("/admin", "layout");
     return NextResponse.json({ ok: true });
   }
 
@@ -142,6 +145,7 @@ export async function PATCH(
       body: `${TYPE_LABEL[entry.entry_type as EntryType]} de ${dateLabel} recusada: ${reason}. Por favor regista de novo.`,
     });
 
+    revalidatePath("/admin", "layout");
     return NextResponse.json({ ok: true, notified });
   }
 
@@ -174,6 +178,7 @@ export async function PATCH(
       .eq("source_entry_id", id)
       .is("consumed_at", null);
 
+    revalidatePath("/admin", "layout");
     return NextResponse.json({ ok: true });
   }
 
@@ -203,6 +208,7 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    revalidatePath("/admin", "layout");
     return NextResponse.json({ ok: true });
   }
 
@@ -246,5 +252,6 @@ export async function DELETE(
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  revalidatePath("/admin", "layout");
+    return NextResponse.json({ ok: true });
 }

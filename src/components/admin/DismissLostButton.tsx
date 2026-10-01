@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 
@@ -57,7 +58,7 @@ export default function DismissLostButton({
       });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   return (

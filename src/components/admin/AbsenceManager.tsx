@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
@@ -85,7 +86,7 @@ export default function AbsenceManager({
     }
     setMessage({ ok: true, text: t.absences.added });
     setNota("");
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   async function apagar(a: AbsenceWithName) {
@@ -102,7 +103,7 @@ export default function AbsenceManager({
       setMessage({ ok: false, text: t.absences.error });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   // A decorrer/futuras primeiro; passadas em baixo, mais discretas.

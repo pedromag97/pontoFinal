@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
@@ -110,7 +111,7 @@ export default function GridCell({
         await dialogs.alert({ title: cabecalho, message: t.absences.error });
         return;
       }
-      router.refresh();
+      await atualizarAdmin(router);
       return;
     }
 
@@ -140,7 +141,7 @@ export default function GridCell({
       });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   return (

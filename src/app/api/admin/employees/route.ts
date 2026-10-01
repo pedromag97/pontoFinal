@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loginToEmail, normalizeLogin, USERNAME_RE } from "@/lib/username";
@@ -74,5 +75,6 @@ export async function POST(request: Request) {
     .update({ full_name: fullName, username })
     .eq("id", data.user.id);
 
+  revalidatePath("/admin", "layout");
   return NextResponse.json({ id: data.user.id, username });
 }

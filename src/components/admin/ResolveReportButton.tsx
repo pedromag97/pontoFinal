@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 
@@ -26,7 +27,7 @@ export default function ResolveReportButton({ id }: { id: string }) {
       })
       .eq("id", id);
     setBusy(false);
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   return (

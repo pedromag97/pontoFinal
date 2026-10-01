@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
@@ -44,7 +45,7 @@ export default function HolidayManager({
     setMessage({ ok: true, text: t.holidays.added });
     setDate("");
     setName("");
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   async function remove(holiday: Holiday) {
@@ -64,7 +65,7 @@ export default function HolidayManager({
       setMessage({ ok: false, text: t.holidays.error });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   // agrupar por ano para leitura fácil

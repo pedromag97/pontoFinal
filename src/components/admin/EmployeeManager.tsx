@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
@@ -68,7 +69,7 @@ export default function EmployeeManager({
     setEmail("");
     setPassword("");
     setRole("employee");
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   async function patchEmployee(id: string, body: Record<string, unknown>) {
@@ -85,7 +86,7 @@ export default function EmployeeManager({
       setMessage({ ok: false, text: body.error ?? t.employees.error });
       return false;
     }
-    router.refresh();
+    await atualizarAdmin(router);
     return true;
   }
 
@@ -117,7 +118,7 @@ export default function EmployeeManager({
       return;
     }
     setMessage({ ok: true, text: t.employees.eraseDone });
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   // Troca de telemóvel: remover o registado obriga o funcionário a
@@ -141,7 +142,7 @@ export default function EmployeeManager({
       setMessage({ ok: false, text: t.employees.error });
       return;
     }
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   async function rename(profile: Profile) {

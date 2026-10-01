@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 
@@ -45,7 +46,7 @@ export default function EditTimeButton({
       body: JSON.stringify({ time: input.trim() }),
     });
     setBusy(false);
-    if (res.ok) router.refresh();
+    if (res.ok) await atualizarAdmin(router);
   }
 
   return (

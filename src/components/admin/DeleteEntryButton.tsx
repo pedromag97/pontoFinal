@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
 
@@ -25,7 +26,7 @@ export default function DeleteEntryButton({ entryId }: { entryId: string }) {
       method: "DELETE",
     });
     setBusy(false);
-    if (res.ok) router.refresh();
+    if (res.ok) await atualizarAdmin(router);
   }
 
   return (

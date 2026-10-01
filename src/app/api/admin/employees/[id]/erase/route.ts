@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -57,5 +58,6 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ ok: true, photosDeleted: paths.length });
+  revalidatePath("/admin", "layout");
+    return NextResponse.json({ ok: true, photosDeleted: paths.length });
 }

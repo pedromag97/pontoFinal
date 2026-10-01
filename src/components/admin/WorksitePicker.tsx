@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import type { Worksite } from "@/types";
 
@@ -32,7 +33,7 @@ export default function WorksitePicker({
       body: JSON.stringify({ worksite_id: novo || null }),
     });
     setBusy(false);
-    if (res.ok) router.refresh();
+    if (res.ok) await atualizarAdmin(router);
   }
 
   // Obra detetada pelo GPS: mostra-se como texto, sem sugerir edição.

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lisbonToUtcIso } from "@/lib/format";
@@ -55,5 +56,6 @@ export async function POST(request: Request) {
     );
   }
 
+  revalidatePath("/admin", "layout");
   return NextResponse.json({ id: data.id });
 }

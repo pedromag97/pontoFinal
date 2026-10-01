@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { atualizarAdmin } from "@/lib/adminRefresh";
 import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { formatTime, todayWorksite } from "@/lib/format";
@@ -115,7 +116,7 @@ export default function AddEntryForm({ employees }: { employees: Profile[] }) {
       setHoras({});
     }
     await carregarDia();
-    router.refresh();
+    await atualizarAdmin(router);
   }
 
   if (!aberto) {
