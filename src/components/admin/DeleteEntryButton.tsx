@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
+import { pedir } from "@/lib/pedir";
 
 const t = getDictionary("pt");
 
@@ -22,11 +23,21 @@ export default function DeleteEntryButton({ entryId }: { entryId: string }) {
     });
     if (!ok) return;
     setBusy(true);
-    const res = await fetch(`/api/admin/entries/${entryId}`, {
+    const res = await pedir(`/api/admin/entries/${entryId}`, {
       method: "DELETE",
     });
     setBusy(false);
-    if (res.ok) await atualizarAdmin(router);
+    if (!res.ok) {
+      // Mostrar a falha: antes isto não fazia nada, e a pessoa ficava a
+      // achar que a alteração tinha entrado.
+      const corpo = await res.json().catch(() => ({}));
+      await dialogs.alert({
+        title: t.entries.saveFailed,
+        message: corpo.error ?? t.employees.error,
+      });
+      return;
+    }
+    await atualizarAdmin(router);
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useDialogs } from "@/components/ui/Dialogs";
+import { pedir } from "@/lib/pedir";
 
 export default function RetentionButton({
   label,
@@ -30,7 +31,7 @@ export default function RetentionButton({
     if (!ok) return;
     setBusy(true);
     setResult(null);
-    const res = await fetch("/api/admin/retention", { method: "POST" });
+    const res = await pedir("/api/admin/retention", { method: "POST" });
     setBusy(false);
     if (!res.ok) {
       setResult("Erro ao aplicar retenção.");

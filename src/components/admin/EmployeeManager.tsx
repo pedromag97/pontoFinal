@@ -13,6 +13,7 @@ import PageHeader from "@/components/admin/PageHeader";
 import Avatar from "@/components/admin/Avatar";
 import SelfieRequestButton from "@/components/admin/SelfieRequestButton";
 import AvisarRegistoButton from "@/components/admin/AvisarRegistoButton";
+import { pedir } from "@/lib/pedir";
 
 const t = getDictionary("pt");
 
@@ -48,7 +49,7 @@ export default function EmployeeManager({
     e.preventDefault();
     setCreating(true);
     setMessage(null);
-    const res = await fetch("/api/admin/employees", {
+    const res = await pedir("/api/admin/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -75,7 +76,7 @@ export default function EmployeeManager({
   async function patchEmployee(id: string, body: Record<string, unknown>) {
     setBusyId(id);
     setMessage(null);
-    const res = await fetch(`/api/admin/employees/${id}`, {
+    const res = await pedir(`/api/admin/employees/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -107,7 +108,7 @@ export default function EmployeeManager({
     });
     setBusyId(profile.id);
     setMessage(null);
-    const res = await fetch(`/api/admin/employees/${profile.id}/erase`, {
+    const res = await pedir(`/api/admin/employees/${profile.id}/erase`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deleteAccount }),

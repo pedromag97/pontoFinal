@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getDictionary } from "@/lib/i18n";
 import { formatTime, todayWorksite } from "@/lib/format";
 import type { EntryType, Profile } from "@/types";
+import { pedir } from "@/lib/pedir";
 
 const t = getDictionary("pt");
 
@@ -89,7 +90,7 @@ export default function AddEntryForm({ employees }: { employees: Profile[] }) {
     setMessage(null);
     const falhas: string[] = [];
     for (const tipo of paraCriar) {
-      const res = await fetch("/api/admin/entries", {
+      const res = await pedir("/api/admin/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

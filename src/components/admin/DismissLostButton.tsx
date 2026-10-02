@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
+import { pedir } from "@/lib/pedir";
 
 const t = getDictionary("pt");
 
@@ -45,7 +46,7 @@ export default function DismissLostButton({
     }
 
     setBusy(true);
-    const res = await fetch("/api/admin/picagens-perdidas", {
+    const res = await pedir("/api/admin/picagens-perdidas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids, repor }),

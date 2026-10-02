@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
+import { pedir } from "@/lib/pedir";
 
 const t = getDictionary("pt");
 
@@ -25,7 +26,7 @@ export default function AvisarRegistoButton({ emFalta }: { emFalta: number }) {
     if (!ok) return;
 
     setBusy(true);
-    const res = await fetch("/api/admin/avisar-registo", { method: "POST" });
+    const res = await pedir("/api/admin/avisar-registo", { method: "POST" });
     setBusy(false);
     if (!res.ok) {
       await dialogs.alert({

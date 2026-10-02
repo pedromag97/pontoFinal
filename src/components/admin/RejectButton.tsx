@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { atualizarAdmin } from "@/lib/adminRefresh";
 import { getDictionary } from "@/lib/i18n";
 import { useDialogs } from "@/components/ui/Dialogs";
+import { pedir } from "@/lib/pedir";
 
 const t = getDictionary("pt");
 
@@ -54,7 +55,7 @@ export default function RejectButton({
     }
 
     setBusy(true);
-    const res = await fetch(`/api/admin/entries/${entryId}`, {
+    const res = await pedir(`/api/admin/entries/${entryId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

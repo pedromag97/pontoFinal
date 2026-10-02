@@ -326,6 +326,7 @@
     "reportsBody": "Avisos enviados da app. Confirma com a pessoa, resolve o que a impede (tipicamente remover o telemóvel registado em Gestão › Funcionários) e cria os registos em falta à mão.",
     "reportNoDevice": "sem telemóvel registado",
     "reportResolve": "Resolvido",
+    "saveFailed": "Não foi gravado",
     "lostTitle": "{n} picagem(ns) tentada(s) e não concluída(s)",
     "lostBody": "A app pediu o registo ao servidor e nunca voltou com ele — a pessoa desistiu, ficou sem GPS, sem câmara, ou a digital falhou. A hora abaixo é a da tentativa: não existe registo nenhum a essa hora. Confirma com o funcionário e cria o registo à mão se for caso disso.",
     "lostNeededPhoto": "pedia selfie",
