@@ -52,14 +52,22 @@ export async function verificarOrdemDoDia(
   }
   horas.set(alteracao.entryType, alteracao.iso);
 
+  // Comparar instantes, nunca texto: a base de dados devolve as horas
+  // como "...+00:00" e a rota gera "....000Z". Comparadas como texto,
+  // duas horas iguais davam resultados diferentes conforme a origem.
+  const ms = (t: string) => new Date(horas.get(t)!).getTime();
+
   const presentes = ORDEM.filter((t) => horas.has(t));
   for (let i = 1; i < presentes.length; i++) {
     const antes = presentes[i - 1];
     const depois = presentes[i];
-    if (horas.get(depois)! <= horas.get(antes)!) {
+    // Horas IGUAIS são permitidas: "tudo às 17:00" é o padrão dos dias
+    // fechados pela gestão (almoço de duração zero, inconfundível).
+    // Só se recusa andar para trás.
+    if (ms(depois) < ms(antes)) {
       return (
         `A ${NOME[depois]} (${hhmm(horas.get(depois)!)}) ficava antes ` +
-        `ou à mesma hora da ${NOME[antes]} (${hhmm(horas.get(antes)!)}). ` +
+        `da ${NOME[antes]} (${hhmm(horas.get(antes)!)}). ` +
         `Confirma que estás a mudar a linha certa.`
       );
     }
