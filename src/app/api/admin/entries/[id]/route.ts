@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lisbonToUtcIso } from "@/lib/format";
+import { verificarOrdemDoDia } from "@/lib/ordemDoDia";
 import { sendPushToUser } from "@/lib/serverPush";
 import type { EntryType } from "@/types";
 
@@ -188,11 +189,24 @@ export async function PATCH(
     }
     const { data: entry } = await admin
       .from("time_entries")
-      .select("entry_date, flags, created_at")
+      .select("entry_date, flags, created_at, employee_id, entry_type")
       .eq("id", id)
       .maybeSingle();
     if (!entry) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+    const problema = await verificarOrdemDoDia(
+      admin,
+      entry.employee_id as string,
+      entry.entry_date as string,
+      {
+        id,
+        entryType: entry.entry_type as string,
+        iso: lisbonToUtcIso(entry.entry_date as string, body.time),
+      }
+    );
+    if (problema) {
+      return NextResponse.json({ error: problema }, { status: 400 });
     }
     const flags = {
       ...(entry.flags as Record<string, unknown>),

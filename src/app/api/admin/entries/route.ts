@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lisbonToUtcIso } from "@/lib/format";
+import { verificarOrdemDoDia } from "@/lib/ordemDoDia";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -33,6 +34,14 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  const problema = await verificarOrdemDoDia(admin, employeeId, date, {
+    entryType,
+    iso: lisbonToUtcIso(date, time),
+  });
+  if (problema) {
+    return NextResponse.json({ error: problema }, { status: 400 });
+  }
+
   const { data, error } = await admin
     .from("time_entries")
     .insert({
